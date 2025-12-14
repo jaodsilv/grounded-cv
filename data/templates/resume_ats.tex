@@ -1,0 +1,77 @@
+% ATS-Optimized Resume Template
+% Designed for maximum ATS compatibility
+
+\documentclass[11pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+
+% Page geometry
+\geometry{
+    letterpaper,
+    top=0.5in,
+    bottom=0.5in,
+    left=0.5in,
+    right=0.5in
+}
+
+% Remove page numbers
+\pagestyle{empty}
+
+% Section formatting
+\titleformat{\section}
+    {\large\bfseries\uppercase}
+    {}
+    {0em}
+    {}
+    [\titlerule]
+
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+% Disable hyphenation for ATS
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+
+\begin{document}
+
+% Header
+\begin{center}
+    {\LARGE\bfseries \VAR{name}} \\[6pt]
+    \VAR{email} | \VAR{phone} | \VAR{location} \\
+    \VAR{linkedin} | \VAR{github}
+\end{center}
+
+% Summary
+\section{Professional Summary}
+\VAR{summary}
+
+% Experience
+\section{Professional Experience}
+\BLOCK{for job in experience}
+\textbf{\VAR{job.title}} \hfill \VAR{job.dates} \\
+\textit{\VAR{job.company}} -- \VAR{job.location}
+\begin{itemize}[leftmargin=*, nosep]
+    \BLOCK{for bullet in job.bullets}
+    \item \VAR{bullet}
+    \BLOCK{endfor}
+\end{itemize}
+\vspace{6pt}
+\BLOCK{endfor}
+
+% Education
+\section{Education}
+\BLOCK{for edu in education}
+\textbf{\VAR{edu.degree}} \hfill \VAR{edu.date} \\
+\textit{\VAR{edu.institution}} -- \VAR{edu.location}
+\BLOCK{endfor}
+
+% Skills
+\section{Technical Skills}
+\textbf{Languages:} \VAR{skills.languages} \\
+\textbf{Frameworks:} \VAR{skills.frameworks} \\
+\textbf{Tools:} \VAR{skills.tools}
+
+\end{document}

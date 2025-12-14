@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATA_DIR=/app/data
+      - DEBUG=${DEBUG:-false}
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # XeTeX container for PDF generation
+  latex:
+    image: texlive/texlive:latest
+    volumes:
+      - ./data:/data
+      - ./templates:/templates
+    working_dir: /data
+    profiles:
+      - pdf
+    command: ["tail", "-f", "/dev/null"]
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  default:
+    name: grounded-cv-network
