@@ -1,5 +1,5 @@
-import { Upload, FileText, Search, Wand2 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Upload, FileText, Search, Wand2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const quickActions = [
   {
@@ -30,16 +30,14 @@ const quickActions = [
     icon: Wand2,
     color: 'bg-orange-500',
   },
-]
+];
 
 export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Welcome to GroundedCV</h1>
-        <p className="mt-1 text-gray-600">
-          Your story. Truthfully tailored.
-        </p>
+        <p className="mt-1 text-gray-600">Your story. Truthfully tailored.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -107,5 +105,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }

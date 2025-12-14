@@ -35,10 +35,9 @@ class AgentMetadata:
         }
         if self.model_used in pricing:
             rates = pricing[self.model_used]
-            self.cost_usd = (
-                (self.tokens_in / 1000) * rates["input"]
-                + (self.tokens_out / 1000) * rates["output"]
-            )
+            self.cost_usd = (self.tokens_in / 1000) * rates["input"] + (
+                self.tokens_out / 1000
+            ) * rates["output"]
         return self.cost_usd
 
 
@@ -102,8 +101,6 @@ class BaseAgent(ABC):
             agent_name=self.name,
             model_used=model,
         )
-
-        start_time = datetime.now()
 
         messages = [{"role": "user", "content": prompt}]
         kwargs = {
@@ -180,6 +177,4 @@ class BaseAgent(ABC):
                 yield text
 
             message = await stream.get_final_message()
-            self.logger.debug(
-                f"Stream complete: {message.usage.output_tokens} tokens"
-            )
+            self.logger.debug(f"Stream complete: {message.usage.output_tokens} tokens")

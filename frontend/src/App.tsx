@@ -1,6 +1,6 @@
-import { Routes, Route } from 'react-router-dom'
-import MainLayout from './components/layout/MainLayout'
-import Dashboard from './pages/Dashboard'
+import { Routes, Route } from 'react-router-dom';
+import MainLayout from './components/layout/MainLayout';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
@@ -9,7 +9,7 @@ function App() {
         <Route index element={<Dashboard />} />
       </Route>
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;
