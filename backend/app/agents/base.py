@@ -10,8 +10,6 @@ from anthropic import AsyncAnthropic
 
 from app.config import settings
 
-logger = logging.getLogger("grounded-cv.agents")
-
 
 @dataclass
 class AgentMetadata:
