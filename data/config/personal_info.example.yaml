@@ -1,0 +1,38 @@
+# Personal Information Configuration (Example)
+# Copy this file to personal_info.yaml and fill in your details
+# This file will be encrypted by git-crypt
+
+name: "Your Full Name"
+email: "your.email@example.com"
+phone: "+1 (555) 123-4567"
+location: "City, State"
+
+# Online profiles
+linkedin: "linkedin.com/in/yourprofile"
+github: "github.com/yourusername"
+portfolio: "yourportfolio.com"
+
+# Address (for cover letters)
+address:
+  street: "123 Main Street"
+  city: "Your City"
+  state: "Your State"
+  zip: "12345"
+  country: "USA"
+
+# Professional summary (base version)
+summary: |
+  Experienced professional with X years of experience in [field].
+  Specialized in [areas of expertise].
+
+# Target roles
+target_roles:
+  - "Senior Software Engineer"
+  - "AI/ML Engineer"
+  - "Technical Lead"
+
+# Industries of interest
+target_industries:
+  - "Technology"
+  - "AI/ML"
+  - "FinTech"

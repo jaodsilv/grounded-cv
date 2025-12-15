@@ -1,0 +1,60 @@
+# System Preferences
+# This file is NOT encrypted - no sensitive data
+
+# Generation settings
+generation:
+  # Number of variants to generate for A/B testing
+  ab_variant_count: 3
+
+  # Quality threshold for generated content (0.0 - 1.0)
+  quality_threshold: 0.8
+
+  # Maximum iterations for quality improvement loops
+  max_iterations: 10
+
+# Model preferences
+models:
+  # Fast model for parsing and extraction
+  fast: "claude-3-5-haiku-20241022"
+
+  # Balanced model for writing and generation
+  balanced: "claude-sonnet-4-5-20250929"
+
+  # Reasoning model for complex analysis
+  reasoning: "claude-opus-4-5-20251101"
+
+# Cache settings
+cache:
+  # Market research cache duration in days
+  market_research_days: 180
+
+  # AI-specific market research (shorter due to rapid changes)
+  ai_market_research_days: 90
+
+  # Company research cache duration in days
+  company_research_days: 180
+
+  # AI company research (shorter due to rapid changes)
+  ai_company_research_days: 90
+
+# Debug settings
+debug:
+  # Enable step-by-step execution mode
+  step_mode: false
+
+  # Log all prompts and responses
+  log_prompts: true
+
+  # Track token usage and costs
+  track_costs: true
+
+# Output settings
+output:
+  # Default output format for resumes
+  resume_format: "pdf"
+
+  # Default LaTeX template
+  default_template: "resume_ats"
+
+  # Include "Why this company" in generation
+  include_why_company: true

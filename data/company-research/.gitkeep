@@ -1,0 +1,4 @@
+# Company Research Directory
+# Contains cached research about companies.
+# Each subdirectory is named by company-slug (e.g., "anthropic")
+# Cache expires after 6 months (3 months for AI companies)

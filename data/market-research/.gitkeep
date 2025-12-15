@@ -1,0 +1,4 @@
+# Market Research Directory
+# Contains cached research about roles and industries.
+# Each subdirectory is named by role-slug (e.g., "senior-software-engineer")
+# Cache expires after 6 months (3 months for AI roles)

@@ -1,0 +1,41 @@
+# GroundedCV Backend Dependencies
+# Python 3.11+
+
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# AI/Claude SDK
+anthropic>=0.18.0
+
+# Data Validation
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Document Processing
+pdfplumber>=0.10.3
+PyYAML>=6.0.1
+
+# Templating
+Jinja2>=3.1.2
+
+# WebSocket
+websockets>=12.0
+
+# HTTP Client
+httpx>=0.26.0
+
+# Logging
+rich>=13.7.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+
+# Linting
+ruff>=0.1.9
+
+# Development
+python-dotenv>=1.0.0

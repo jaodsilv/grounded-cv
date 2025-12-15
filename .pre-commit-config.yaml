@@ -1,0 +1,74 @@
+# Pre-commit hooks configuration for GroundedCV
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom tags in YAML
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-toml
+      - id: check-json
+        exclude: ^frontend/tsconfig.*\.json$  # TypeScript config allows comments
+
+  # Python - Ruff linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  # Python - Type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        files: ^backend/app/
+        additional_dependencies:
+          - pydantic>=2.5.0
+          - fastapi>=0.109.0
+          - types-PyYAML>=6.0.0
+
+  # JavaScript/TypeScript - ESLint
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: npm run lint --prefix frontend
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
+  # JavaScript/TypeScript - Prettier
+  - repo: local
+    hooks:
+      - id: prettier
+        name: Prettier
+        entry: npx prettier --write --ignore-unknown
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|css|json|md)$
+        exclude: ^frontend/(node_modules|dist)/
+
+  # Security - Secret detection
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.1
+    hooks:
+      - id: gitleaks
+
+# CI settings
+ci:
+  autofix_commit_msg: 'style: auto-fix by pre-commit hooks'
+  autoupdate_commit_msg: 'chore: update pre-commit hooks'
+  skip: [eslint, prettier]  # Skip local hooks in CI (run separately)

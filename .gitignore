@@ -1,0 +1,92 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+env/
+ENV/
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+.project
+.classpath
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Data (handled by git-crypt, but exclude unencrypted temporary files)
+data/master-resume/sources/*.pdf
+data/tailored/*/variants/
+*.pdf.tmp
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+coverage/
+.nyc_output/
+
+# Build
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+*.bak
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+# LaTeX auxiliary files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.toc
+*.synctex.gz
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Secrets (should be in .env)
+*.pem
+*.key
+secrets/
