@@ -19,6 +19,26 @@ from claude_agent_sdk import (
 from app.config import settings
 
 
+class AgentError(Exception):
+    """Base exception for agent-related errors."""
+
+    def __init__(self, message: str, agent_name: str | None = None):
+        self.agent_name = agent_name
+        super().__init__(message)
+
+
+class AgentConnectionError(AgentError):
+    """Raised when connection to Claude SDK fails."""
+
+    pass
+
+
+class AgentQueryError(AgentError):
+    """Raised when a query to Claude fails."""
+
+    pass
+
+
 @dataclass
 class AgentMetadata:
     """Metadata about an agent execution."""
@@ -160,6 +180,7 @@ class BaseAgent(ABC):
         system_prompt: str | None = None,
         tools: list[str] | None = None,
         max_turns: int | None = None,
+        model: str | None = None,
     ) -> ClaudeAgentOptions:
         """Build ClaudeAgentOptions with common settings.
 
@@ -167,12 +188,13 @@ class BaseAgent(ABC):
             system_prompt: Override system prompt for this call
             tools: Override tools for this call
             max_turns: Maximum conversation turns
+            model: Override model for this call
 
         Returns:
             ClaudeAgentOptions configured for this agent
         """
         return ClaudeAgentOptions(
-            model=self.model,
+            model=model or self.model,
             system_prompt=system_prompt or self.system_prompt,
             allowed_tools=tools if tools is not None else self.tools,
             max_turns=max_turns or settings.max_iterations,
@@ -215,17 +237,19 @@ class BaseAgent(ABC):
 
         Returns:
             Tuple of (response_text, metadata)
+
+        Raises:
+            AgentConnectionError: If connection to Claude fails
+            AgentQueryError: If the query fails
         """
         used_model = model or self.model
         started_at = datetime.now()
 
-        options = ClaudeAgentOptions(
+        options = self._get_options(
+            system_prompt=system,
+            tools=tools,
+            max_turns=max_turns,
             model=used_model,
-            system_prompt=system or self.system_prompt,
-            allowed_tools=tools if tools is not None else self.tools,
-            max_turns=max_turns or settings.max_iterations,
-            permission_mode="acceptEdits",
-            cwd=str(settings.data_dir.resolve()),
         )
 
         self.logger.debug(f"Calling {used_model} with {len(prompt)} chars (stateless)")
@@ -233,21 +257,38 @@ class BaseAgent(ABC):
         response_text = ""
         metadata: AgentMetadata | None = None
 
-        async for message in query(prompt=prompt, options=options):
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        response_text += block.text
-            elif isinstance(message, ResultMessage):
-                metadata = AgentMetadata.from_result_message(
-                    agent_name=self.name,
-                    model=used_model,
-                    result=message,
-                    started_at=started_at,
-                )
+        try:
+            async for message in query(prompt=prompt, options=options):
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            response_text += block.text
+                elif isinstance(message, ResultMessage):
+                    metadata = AgentMetadata.from_result_message(
+                        agent_name=self.name,
+                        model=used_model,
+                        result=message,
+                        started_at=started_at,
+                    )
+        except (ConnectionError, TimeoutError, OSError) as e:
+            self.logger.error(f"SDK connection error in _call_claude: {e}")
+            raise AgentConnectionError(
+                f"Failed to connect to Claude API: {e}",
+                agent_name=self.name,
+            ) from e
+        except Exception as e:
+            self.logger.error(f"Unexpected error in _call_claude: {e}")
+            raise AgentQueryError(
+                f"Query to Claude failed: {e}",
+                agent_name=self.name,
+            ) from e
 
         if metadata is None:
-            # Fallback if no ResultMessage received
+            # Fallback if no ResultMessage received - this may indicate SDK issue
+            self.logger.warning(
+                "No ResultMessage received from SDK - using fallback metadata "
+                "(cost and token tracking will be incomplete)"
+            )
             metadata = AgentMetadata(
                 agent_name=self.name,
                 model_used=used_model,
@@ -284,25 +325,43 @@ class BaseAgent(ABC):
 
         Yields:
             Text chunks as they arrive
+
+        Raises:
+            AgentConnectionError: If connection to Claude fails
+            AgentQueryError: If the streaming query fails
         """
         used_model = model or self.model
 
-        options = ClaudeAgentOptions(
+        options = self._get_options(
+            system_prompt=system,
+            tools=tools,
+            max_turns=max_turns,
             model=used_model,
-            system_prompt=system or self.system_prompt,
-            allowed_tools=tools if tools is not None else self.tools,
-            max_turns=max_turns or settings.max_iterations,
-            permission_mode="acceptEdits",
-            cwd=str(settings.data_dir.resolve()),
         )
 
         self.logger.debug(f"Streaming from {used_model} (stateless)")
 
-        async for message in query(prompt=prompt, options=options):
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        yield block.text
+        try:
+            async for message in query(prompt=prompt, options=options):
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            yield block.text
+        except (ConnectionError, TimeoutError, OSError) as e:
+            self.logger.error(f"SDK connection error in _stream_claude: {e}")
+            raise AgentConnectionError(
+                f"Failed to connect to Claude API: {e}",
+                agent_name=self.name,
+            ) from e
+        except GeneratorExit:
+            self.logger.debug("Stream cancelled by consumer")
+            raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error in _stream_claude: {e}")
+            raise AgentQueryError(
+                f"Streaming query to Claude failed: {e}",
+                agent_name=self.name,
+            ) from e
 
         self.logger.debug("Stream complete")
 
@@ -323,10 +382,28 @@ class BaseAgent(ABC):
             initial_prompt: Optional first message to send
             system: Optional system prompt
             tools: Tools to enable
+
+        Raises:
+            AgentConnectionError: If connection to Claude fails
         """
         options = self._get_options(system_prompt=system, tools=tools)
         self._client = ClaudeSDKClient(options=options)
-        await self._client.connect(prompt=initial_prompt)
+        try:
+            await self._client.connect(prompt=initial_prompt)
+        except (ConnectionError, TimeoutError, OSError) as e:
+            self._client = None
+            self.logger.error(f"Failed to start conversation: {e}")
+            raise AgentConnectionError(
+                f"Failed to connect to Claude API: {e}",
+                agent_name=self.name,
+            ) from e
+        except Exception as e:
+            self._client = None
+            self.logger.error(f"Unexpected error starting conversation: {e}")
+            raise AgentConnectionError(
+                f"Failed to start conversation: {e}",
+                agent_name=self.name,
+            ) from e
         self.logger.debug("Started conversation session")
 
     async def _continue_conversation(
@@ -343,28 +420,43 @@ class BaseAgent(ABC):
 
         Raises:
             RuntimeError: If no conversation session is active
+            AgentQueryError: If the query fails
         """
         if self._client is None:
             raise RuntimeError("No active conversation. Call _start_conversation() first.")
 
         started_at = datetime.now()
-        await self._client.query(prompt)
 
-        response_text = ""
-        metadata: AgentMetadata | None = None
+        try:
+            await self._client.query(prompt)
 
-        async for message in self._client.receive_response():
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        response_text += block.text
-            elif isinstance(message, ResultMessage):
-                metadata = AgentMetadata.from_result_message(
-                    agent_name=self.name,
-                    model=self.model,
-                    result=message,
-                    started_at=started_at,
-                )
+            response_text = ""
+            metadata: AgentMetadata | None = None
+
+            async for message in self._client.receive_response():
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            response_text += block.text
+                elif isinstance(message, ResultMessage):
+                    metadata = AgentMetadata.from_result_message(
+                        agent_name=self.name,
+                        model=self.model,
+                        result=message,
+                        started_at=started_at,
+                    )
+        except (ConnectionError, TimeoutError, OSError) as e:
+            self.logger.error(f"SDK connection error in _continue_conversation: {e}")
+            raise AgentConnectionError(
+                f"Connection lost during conversation: {e}",
+                agent_name=self.name,
+            ) from e
+        except Exception as e:
+            self.logger.error(f"Unexpected error in _continue_conversation: {e}")
+            raise AgentQueryError(
+                f"Conversation query failed: {e}",
+                agent_name=self.name,
+            ) from e
 
         return response_text, metadata
 
@@ -382,17 +474,34 @@ class BaseAgent(ABC):
 
         Raises:
             RuntimeError: If no conversation session is active
+            AgentQueryError: If the streaming query fails
         """
         if self._client is None:
             raise RuntimeError("No active conversation. Call _start_conversation() first.")
 
-        await self._client.query(prompt)
+        try:
+            await self._client.query(prompt)
 
-        async for message in self._client.receive_response():
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        yield block.text
+            async for message in self._client.receive_response():
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            yield block.text
+        except (ConnectionError, TimeoutError, OSError) as e:
+            self.logger.error(f"SDK connection error in _stream_conversation: {e}")
+            raise AgentConnectionError(
+                f"Connection lost during streaming: {e}",
+                agent_name=self.name,
+            ) from e
+        except GeneratorExit:
+            self.logger.debug("Stream cancelled by consumer")
+            raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error in _stream_conversation: {e}")
+            raise AgentQueryError(
+                f"Streaming conversation failed: {e}",
+                agent_name=self.name,
+            ) from e
 
     async def _end_conversation(self) -> None:
         """End the current conversation session."""
@@ -412,8 +521,19 @@ class BaseAgent(ABC):
         exc_val: BaseException | None,
         exc_tb: Any,
     ) -> None:
-        """Async context manager exit - ends conversation."""
-        await self._end_conversation()
+        """Async context manager exit - ends conversation.
+
+        Ensures cleanup happens even if an exception occurred.
+        Does not suppress the original exception.
+        """
+        try:
+            await self._end_conversation()
+        except Exception as cleanup_error:
+            self.logger.error(f"Error during conversation cleanup: {cleanup_error}")
+            # Only raise cleanup error if no original exception
+            if exc_val is None:
+                raise
+            # Otherwise, log but don't mask the original exception
 
 
 async def quick_query(
@@ -435,7 +555,12 @@ async def quick_query(
 
     Returns:
         Response text from Claude
+
+    Raises:
+        AgentConnectionError: If connection to Claude fails
+        AgentQueryError: If the query fails
     """
+    logger = logging.getLogger("grounded-cv.agents.quick_query")
     options = ClaudeAgentOptions(
         model=model or settings.model_balanced,
         system_prompt=system_prompt,
@@ -445,10 +570,17 @@ async def quick_query(
     )
 
     response_text = ""
-    async for message in query(prompt=prompt, options=options):
-        if isinstance(message, AssistantMessage):
-            for block in message.content:
-                if isinstance(block, TextBlock):
-                    response_text += block.text
+    try:
+        async for message in query(prompt=prompt, options=options):
+            if isinstance(message, AssistantMessage):
+                for block in message.content:
+                    if isinstance(block, TextBlock):
+                        response_text += block.text
+    except (ConnectionError, TimeoutError, OSError) as e:
+        logger.error(f"SDK connection error in quick_query: {e}")
+        raise AgentConnectionError(f"Failed to connect to Claude API: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error in quick_query: {e}")
+        raise AgentQueryError(f"Quick query failed: {e}") from e
 
     return response_text

@@ -385,3 +385,167 @@ class TestQuickQuery:
             result = await quick_query("Quick question")
 
             assert result == "Quick response!"
+
+
+class TestMissingCoverage:
+    """Tests for previously uncovered code paths."""
+
+    @pytest.mark.asyncio
+    async def test_continue_conversation_success(self, mock_settings, mock_sdk_client):
+        """Test _continue_conversation happy path with active client."""
+        from app.agents.base import BaseAgent
+
+        class TestAgent(BaseAgent):
+            async def run(self, *args, **kwargs):
+                return None
+
+        # Mock text block and messages with spec for isinstance checks
+        mock_text_block = MagicMock(spec=TextBlock)
+        mock_text_block.text = "Continued response!"
+
+        mock_assistant = MagicMock(spec=AssistantMessage)
+        mock_assistant.content = [mock_text_block]
+
+        mock_result = MagicMock(spec=ResultMessage)
+        mock_result.usage = {"input_tokens": 30, "output_tokens": 20}
+        mock_result.duration_ms = 600
+        mock_result.total_cost_usd = 0.002
+        mock_result.session_id = "continue-session"
+
+        async def mock_receive_response():
+            yield mock_assistant
+            yield mock_result
+
+        mock_sdk_client.receive_response = mock_receive_response
+
+        with (
+            patch("app.agents.base.settings", mock_settings),
+            patch("app.agents.base.ClaudeSDKClient", return_value=mock_sdk_client),
+        ):
+            agent = TestAgent(name="test-agent")
+            await agent._start_conversation()
+
+            text, metadata = await agent._continue_conversation("Follow-up question")
+
+            assert text == "Continued response!"
+            assert metadata is not None
+            assert metadata.tokens_in == 30
+            assert metadata.tokens_out == 20
+            assert metadata.cost_usd == 0.002
+            mock_sdk_client.query.assert_called_once_with("Follow-up question")
+
+    @pytest.mark.asyncio
+    async def test_stream_conversation_yields_text(self, mock_settings, mock_sdk_client):
+        """Test _stream_conversation yields text chunks with active client."""
+        from app.agents.base import BaseAgent
+
+        class TestAgent(BaseAgent):
+            async def run(self, *args, **kwargs):
+                return None
+
+        # Mock streaming response
+        mock_block1 = MagicMock(spec=TextBlock)
+        mock_block1.text = "Stream "
+
+        mock_block2 = MagicMock(spec=TextBlock)
+        mock_block2.text = "chunks!"
+
+        mock_assistant1 = MagicMock(spec=AssistantMessage)
+        mock_assistant1.content = [mock_block1]
+
+        mock_assistant2 = MagicMock(spec=AssistantMessage)
+        mock_assistant2.content = [mock_block2]
+
+        async def mock_receive_response():
+            yield mock_assistant1
+            yield mock_assistant2
+
+        mock_sdk_client.receive_response = mock_receive_response
+
+        with (
+            patch("app.agents.base.settings", mock_settings),
+            patch("app.agents.base.ClaudeSDKClient", return_value=mock_sdk_client),
+        ):
+            agent = TestAgent(name="test-agent")
+            await agent._start_conversation()
+
+            chunks = []
+            async for chunk in agent._stream_conversation("Stream this"):
+                chunks.append(chunk)
+
+            assert chunks == ["Stream ", "chunks!"]
+            mock_sdk_client.query.assert_called_once_with("Stream this")
+
+    @pytest.mark.asyncio
+    async def test_stream_conversation_without_starting_raises(self, mock_settings):
+        """Test _stream_conversation raises if no session started."""
+        from app.agents.base import BaseAgent
+
+        class TestAgent(BaseAgent):
+            async def run(self, *args, **kwargs):
+                return None
+
+        with patch("app.agents.base.settings", mock_settings):
+            agent = TestAgent(name="test-agent")
+
+            with pytest.raises(RuntimeError, match="No active conversation"):
+                async for _ in agent._stream_conversation("Hello"):
+                    pass
+
+    @pytest.mark.asyncio
+    async def test_call_claude_fallback_metadata(self, mock_settings):
+        """Test _call_claude creates fallback metadata when no ResultMessage received."""
+        from app.agents.base import BaseAgent
+
+        class TestAgent(BaseAgent):
+            async def run(self, *args, **kwargs):
+                return None
+
+        # Only yield AssistantMessage, no ResultMessage
+        mock_text_block = MagicMock(spec=TextBlock)
+        mock_text_block.text = "Response without result!"
+
+        mock_assistant = MagicMock(spec=AssistantMessage)
+        mock_assistant.content = [mock_text_block]
+
+        async def mock_query_no_result(*args, **kwargs):
+            yield mock_assistant
+            # No ResultMessage yielded
+
+        with (
+            patch("app.agents.base.settings", mock_settings),
+            patch("app.agents.base.query", mock_query_no_result),
+        ):
+            agent = TestAgent(name="test-agent")
+            text, metadata = await agent._call_claude("Test prompt")
+
+            assert text == "Response without result!"
+            # Fallback metadata should have zeros
+            assert metadata.tokens_in == 0
+            assert metadata.tokens_out == 0
+            assert metadata.cost_usd == 0.0
+            assert metadata.agent_name == "test-agent"
+
+    @pytest.mark.asyncio
+    async def test_context_manager_cleanup_on_exception(self, mock_settings, mock_sdk_client):
+        """Test context manager cleans up even when exception occurs."""
+        from app.agents.base import BaseAgent
+
+        class TestAgent(BaseAgent):
+            async def run(self, *args, **kwargs):
+                return None
+
+        with (
+            patch("app.agents.base.settings", mock_settings),
+            patch("app.agents.base.ClaudeSDKClient", return_value=mock_sdk_client),
+        ):
+            agent = TestAgent(name="test-agent")
+
+            with pytest.raises(ValueError, match="Test error"):
+                async with agent:
+                    assert agent._client is not None
+                    raise ValueError("Test error")
+
+            # Cleanup should still have happened
+            assert agent._client is None
+            mock_sdk_client.disconnect.assert_called_once()
