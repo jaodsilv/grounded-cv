@@ -15,8 +15,9 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # API Keys
-    anthropic_api_key: str = ""
+    # Note: Claude Agent SDK uses Claude CLI configuration for authentication.
+    # No API key configuration is needed here. Set up via `claude login` or
+    # environment variables for Bedrock/Vertex.
 
     # Application
     app_name: str = "GroundedCV"
