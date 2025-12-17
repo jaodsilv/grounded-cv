@@ -90,7 +90,7 @@ class AgentMetadata:
         """Calculate the cost based on model and tokens used.
 
         This is a fallback method when SDK doesn't provide cost.
-        Uses current Claude pricing (December 2024).
+        Uses Claude pricing as of the documentation date.
 
         Returns:
             Calculated cost in USD
@@ -313,7 +313,7 @@ class BaseAgent(ABC):
 
                     delay = self.retry_config.calculate_delay(attempt)
                     self.logger.warning(
-                        f"Retry {attempt + 1}/{self.retry_config.max_attempts - 1}: "
+                        f"Attempt {attempt + 1}/{self.retry_config.max_attempts} failed: "
                         f"{type(e).__name__}: {e}. Retrying in {delay:.2f}s"
                     )
                     await asyncio.sleep(delay)
@@ -454,7 +454,7 @@ class BaseAgent(ABC):
                 if attempt < self.retry_config.max_attempts - 1:
                     delay = self.retry_config.calculate_delay(attempt)
                     self.logger.warning(
-                        f"Retry {attempt + 1}/{self.retry_config.max_attempts - 1}: "
+                        f"Attempt {attempt + 1}/{self.retry_config.max_attempts} failed: "
                         f"{type(e).__name__}: {e}. Retrying in {delay:.2f}s"
                     )
                     await asyncio.sleep(delay)
@@ -669,7 +669,7 @@ async def quick_query(
             if attempt < config.max_attempts - 1:
                 delay = config.calculate_delay(attempt)
                 logger.warning(
-                    f"Retry {attempt + 1}/{config.max_attempts - 1}: "
+                    f"Attempt {attempt + 1}/{config.max_attempts} failed: "
                     f"{type(e).__name__}: {e}. Retrying in {delay:.2f}s"
                 )
                 await asyncio.sleep(delay)

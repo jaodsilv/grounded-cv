@@ -20,6 +20,11 @@ def mock_settings():
         mock.max_tokens = 4096
         mock.max_iterations = 10
         mock.data_dir = Path("./data")
+        # Retry configuration
+        mock.retry_max_attempts = 3
+        mock.retry_base_delay = 0.01  # Fast for tests
+        mock.retry_max_delay = 0.1  # Fast for tests
+        mock.retry_exponential_base = 2.0
         yield mock
 
 

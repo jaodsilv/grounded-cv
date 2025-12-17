@@ -22,9 +22,9 @@ class RetryConfig:
     Attributes:
         max_attempts: Maximum number of attempts (including initial try)
         base_delay: Base delay in seconds between retries
-        max_delay: Maximum delay in seconds (caps exponential growth)
+        max_delay: Maximum delay in seconds (caps exponential growth, after jitter)
         exponential_base: Base for exponential backoff calculation
-        jitter: Whether to add randomization to delays
+        jitter: Whether to add randomization to delays (applied before max_delay cap)
     """
 
     max_attempts: int = 3
@@ -32,6 +32,17 @@ class RetryConfig:
     max_delay: float = 30.0
     exponential_base: float = 2.0
     jitter: bool = True
+
+    def __post_init__(self) -> None:
+        """Validate configuration values."""
+        if self.max_attempts < 1:
+            raise ValueError("max_attempts must be >= 1")
+        if self.base_delay < 0:
+            raise ValueError("base_delay must be >= 0")
+        if self.max_delay < 0:
+            raise ValueError("max_delay must be >= 0")
+        if self.exponential_base < 1:
+            raise ValueError("exponential_base must be >= 1")
 
     def calculate_delay(self, attempt: int) -> float:
         """Calculate delay for a given attempt number (0-indexed).
@@ -43,10 +54,11 @@ class RetryConfig:
             Delay in seconds before next retry
         """
         delay = self.base_delay * (self.exponential_base**attempt)
-        delay = min(delay, self.max_delay)
         if self.jitter:
-            # Add jitter: 0.5x to 1.5x of calculated delay
+            # Add jitter: 0.5x to 1.5x of calculated delay (applied before cap)
             delay = delay * (0.5 + random.random())
+        # Cap at max_delay after jitter to ensure predictable maximum
+        delay = min(delay, self.max_delay)
         return delay
 
 
@@ -91,7 +103,7 @@ def retry_on_transient_error(
                     if attempt < config.max_attempts - 1:
                         delay = config.calculate_delay(attempt)
                         log.warning(
-                            f"Retry {attempt + 1}/{config.max_attempts - 1}: "
+                            f"Attempt {attempt + 1}/{config.max_attempts} failed: "
                             f"{type(e).__name__}: {e}. Retrying in {delay:.2f}s"
                         )
                         await asyncio.sleep(delay)
@@ -171,7 +183,7 @@ async def retry_async_generator(
             if attempt < config.max_attempts - 1:
                 delay = config.calculate_delay(attempt)
                 log.warning(
-                    f"Retry {attempt + 1}/{config.max_attempts - 1}: "
+                    f"Attempt {attempt + 1}/{config.max_attempts} failed: "
                     f"{type(e).__name__}: {e}. Retrying in {delay:.2f}s"
                 )
                 await asyncio.sleep(delay)
@@ -181,8 +193,10 @@ async def retry_async_generator(
             if gen is not None and hasattr(gen, "aclose"):
                 try:
                     await gen.aclose()
-                except Exception:
-                    pass  # Ignore cleanup errors
+                except (GeneratorExit, StopAsyncIteration, RuntimeError):
+                    pass  # Expected during cleanup
+                except Exception as cleanup_error:
+                    log.warning(f"Unexpected error during generator cleanup: {cleanup_error}")
 
     # All retries exhausted
     if last_exception is not None:

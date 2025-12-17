@@ -99,6 +99,46 @@ class TestRetryConfig:
         unique_delays = set(delays)
         assert len(unique_delays) > 1
 
+    def test_calculate_delay_with_jitter_respects_max(self):
+        """Test jitter is applied before max_delay cap."""
+        config = RetryConfig(
+            base_delay=10.0,
+            exponential_base=1.0,
+            max_delay=5.0,  # Lower than base_delay
+            jitter=True,
+        )
+
+        # Even with jitter (0.5x to 1.5x of 10.0 = 5.0 to 15.0),
+        # delay should be capped at max_delay=5.0
+        delays = [config.calculate_delay(0) for _ in range(100)]
+        for delay in delays:
+            assert delay <= 5.0
+
+    def test_validation_max_attempts_zero(self):
+        """Test RetryConfig rejects max_attempts=0."""
+        with pytest.raises(ValueError, match="max_attempts must be >= 1"):
+            RetryConfig(max_attempts=0)
+
+    def test_validation_max_attempts_negative(self):
+        """Test RetryConfig rejects negative max_attempts."""
+        with pytest.raises(ValueError, match="max_attempts must be >= 1"):
+            RetryConfig(max_attempts=-1)
+
+    def test_validation_base_delay_negative(self):
+        """Test RetryConfig rejects negative base_delay."""
+        with pytest.raises(ValueError, match="base_delay must be >= 0"):
+            RetryConfig(base_delay=-1.0)
+
+    def test_validation_max_delay_negative(self):
+        """Test RetryConfig rejects negative max_delay."""
+        with pytest.raises(ValueError, match="max_delay must be >= 0"):
+            RetryConfig(max_delay=-1.0)
+
+    def test_validation_exponential_base_below_one(self):
+        """Test RetryConfig rejects exponential_base < 1."""
+        with pytest.raises(ValueError, match="exponential_base must be >= 1"):
+            RetryConfig(exponential_base=0.5)
+
 
 class TestRetryOnTransientError:
     """Tests for the retry_on_transient_error decorator."""
@@ -225,8 +265,8 @@ class TestRetryOnTransientError:
         with caplog.at_level(logging.WARNING):
             await fails_twice()
 
-        # Should have logged 2 retry attempts
-        retry_logs = [r for r in caplog.records if "Retry" in r.message]
+        # Should have logged 2 retry attempts (format: "Attempt X/Y failed")
+        retry_logs = [r for r in caplog.records if "Attempt" in r.message and "failed" in r.message]
         assert len(retry_logs) == 2
 
     @pytest.mark.asyncio
@@ -454,5 +494,28 @@ class TestRetryAsyncGenerator:
                 results.append(chunk)
 
         assert results == ["success"]
-        retry_logs = [r for r in caplog.records if "Retry" in r.message]
+        retry_logs = [r for r in caplog.records if "Attempt" in r.message and "failed" in r.message]
         assert len(retry_logs) == 1
+
+    @pytest.mark.asyncio
+    async def test_generator_uses_default_config_when_none(self):
+        """Test retry_async_generator uses default config when none provided."""
+        call_count = 0
+
+        async def fails_once_then_succeeds():
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise ConnectionError("Temporary failure")
+            yield "success"
+
+        results = []
+        # No config parameter - should use default RetryConfig
+        async for chunk in retry_async_generator(
+            generator_factory=fails_once_then_succeeds,
+            retryable_exceptions=(ConnectionError,),
+        ):
+            results.append(chunk)
+
+        assert results == ["success"]
+        assert call_count == 2  # Retried once with default config

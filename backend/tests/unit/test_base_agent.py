@@ -893,3 +893,32 @@ class TestQuickQueryRetry:
                 )
 
             assert call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_quick_query_exhausts_retries(self, mock_settings):
+        """Test quick_query raises after exhausting all retry attempts."""
+        from app.agents.base import AgentConnectionError
+        from app.utils.retry import RetryConfig
+
+        call_count = 0
+
+        async def mock_query_always_fails(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            raise ConnectionError("Persistent connection failure")
+            yield
+
+        with (
+            patch("app.agents.base.settings", mock_settings),
+            patch("app.agents.base.query", mock_query_always_fails),
+        ):
+            from app.agents.base import quick_query
+
+            with pytest.raises(AgentConnectionError, match="Failed to connect"):
+                await quick_query(
+                    "Quick test",
+                    retry_config=RetryConfig(max_attempts=3, base_delay=0.01, jitter=False),
+                )
+
+            # Should have tried all 3 attempts
+            assert call_count == 3
