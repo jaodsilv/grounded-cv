@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     agent_pool_size: int = 5
     ab_variant_count: int = 3
 
+    # Retry Configuration
+    retry_max_attempts: int = 3
+    retry_base_delay: float = 1.0  # seconds
+    retry_max_delay: float = 30.0  # seconds
+    retry_exponential_base: float = 2.0
+
     # Cache Configuration
     market_research_cache_days: int = 180  # 6 months
     company_research_cache_days: int = 180  # 6 months
