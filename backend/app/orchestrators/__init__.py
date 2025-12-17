@@ -1,3 +1,3 @@
 """Orchestrators for GroundedCV."""
 
-__all__: list[str] = []
+__all__ = []
