@@ -17,6 +17,7 @@ from claude_agent_sdk import (
 )
 
 from app.config import settings
+from app.utils.retry import RetryConfig, retry_async_generator
 
 
 class AgentError(Exception):
@@ -157,6 +158,7 @@ class BaseAgent(ABC):
         model: str | None = None,
         tools: list[str] | None = None,
         system_prompt: str | None = None,
+        retry_config: RetryConfig | None = None,
     ):
         """Initialize the agent.
 
@@ -165,12 +167,21 @@ class BaseAgent(ABC):
             model: Model to use (defaults to balanced model from settings)
             tools: List of allowed tools (defaults to DEFAULT_TOOLS)
             system_prompt: Optional system prompt for this agent
+            retry_config: Configuration for retry behavior (defaults from settings)
         """
         self.name = name
         self.model = model or settings.model_balanced
         self.tools = tools if tools is not None else self.DEFAULT_TOOLS
         self.system_prompt = system_prompt
         self.logger = logging.getLogger(f"grounded-cv.agents.{name}")
+
+        # Retry configuration (from parameter or settings)
+        self.retry_config = retry_config or RetryConfig(
+            max_attempts=settings.retry_max_attempts,
+            base_delay=settings.retry_base_delay,
+            max_delay=settings.retry_max_delay,
+            exponential_base=settings.retry_exponential_base,
+        )
 
         # Client for conversational mode (lazy initialization)
         self._client: ClaudeSDKClient | None = None
@@ -227,6 +238,7 @@ class BaseAgent(ABC):
 
         Uses the query() function - creates a new session for each call.
         Best for one-off tasks that don't need conversation history.
+        Includes automatic retry with exponential backoff for transient errors.
 
         Args:
             prompt: The user prompt to send
@@ -239,11 +251,10 @@ class BaseAgent(ABC):
             Tuple of (response_text, metadata)
 
         Raises:
-            AgentConnectionError: If connection to Claude fails
-            AgentQueryError: If the query fails
+            AgentConnectionError: If connection to Claude fails after retries
+            AgentQueryError: If the query fails (not retried)
         """
         used_model = model or self.model
-        started_at = datetime.now()
 
         options = self._get_options(
             system_prompt=system,
@@ -254,54 +265,80 @@ class BaseAgent(ABC):
 
         self.logger.debug(f"Calling {used_model} with {len(prompt)} chars (stateless)")
 
-        response_text = ""
-        metadata: AgentMetadata | None = None
+        # Retry logic for transient errors
+        last_exception: Exception | None = None
+        for attempt in range(self.retry_config.max_attempts):
+            started_at = datetime.now()
+            response_text = ""
+            metadata: AgentMetadata | None = None
 
-        try:
-            async for message in query(prompt=prompt, options=options):
-                if isinstance(message, AssistantMessage):
-                    for block in message.content:
-                        if isinstance(block, TextBlock):
-                            response_text += block.text
-                elif isinstance(message, ResultMessage):
-                    metadata = AgentMetadata.from_result_message(
-                        agent_name=self.name,
-                        model=used_model,
-                        result=message,
-                        started_at=started_at,
+            try:
+                async for message in query(prompt=prompt, options=options):
+                    if isinstance(message, AssistantMessage):
+                        for block in message.content:
+                            if isinstance(block, TextBlock):
+                                response_text += block.text
+                    elif isinstance(message, ResultMessage):
+                        metadata = AgentMetadata.from_result_message(
+                            agent_name=self.name,
+                            model=used_model,
+                            result=message,
+                            started_at=started_at,
+                        )
+
+                # Success - break out of retry loop
+                if metadata is None:
+                    self.logger.warning(
+                        "No ResultMessage received from SDK - using fallback metadata "
+                        "(cost and token tracking will be incomplete)"
                     )
-        except (ConnectionError, TimeoutError, OSError) as e:
-            self.logger.error(f"SDK connection error in _call_claude: {e}")
+                    metadata = AgentMetadata(
+                        agent_name=self.name,
+                        model_used=used_model,
+                        started_at=started_at,
+                        completed_at=datetime.now(),
+                    )
+
+                self.logger.debug(
+                    f"Response: {metadata.tokens_out} tokens, "
+                    f"${metadata.cost_usd:.4f}, {metadata.latency_ms}ms"
+                )
+
+                return response_text, metadata
+
+            except (ConnectionError, TimeoutError, OSError) as e:
+                last_exception = e
+                if attempt < self.retry_config.max_attempts - 1:
+                    import asyncio
+
+                    delay = self.retry_config.calculate_delay(attempt)
+                    self.logger.warning(
+                        f"Retry {attempt + 1}/{self.retry_config.max_attempts - 1}: "
+                        f"{type(e).__name__}: {e}. Retrying in {delay:.2f}s"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    self.logger.error(f"SDK connection error in _call_claude: {e}")
+                    raise AgentConnectionError(
+                        f"Failed to connect to Claude API: {e}",
+                        agent_name=self.name,
+                    ) from e
+            except Exception as e:
+                # Non-retryable errors - fail immediately
+                self.logger.error(f"Unexpected error in _call_claude: {e}")
+                raise AgentQueryError(
+                    f"Query to Claude failed: {e}",
+                    agent_name=self.name,
+                ) from e
+
+        # Should not reach here, but handle edge case
+        if last_exception is not None:
             raise AgentConnectionError(
-                f"Failed to connect to Claude API: {e}",
+                f"Failed to connect to Claude API: {last_exception}",
                 agent_name=self.name,
-            ) from e
-        except Exception as e:
-            self.logger.error(f"Unexpected error in _call_claude: {e}")
-            raise AgentQueryError(
-                f"Query to Claude failed: {e}",
-                agent_name=self.name,
-            ) from e
+            ) from last_exception
 
-        if metadata is None:
-            # Fallback if no ResultMessage received - this may indicate SDK issue
-            self.logger.warning(
-                "No ResultMessage received from SDK - using fallback metadata "
-                "(cost and token tracking will be incomplete)"
-            )
-            metadata = AgentMetadata(
-                agent_name=self.name,
-                model_used=used_model,
-                started_at=started_at,
-                completed_at=datetime.now(),
-            )
-
-        self.logger.debug(
-            f"Response: {metadata.tokens_out} tokens, "
-            f"${metadata.cost_usd:.4f}, {metadata.latency_ms}ms"
-        )
-
-        return response_text, metadata
+        raise RuntimeError("Unexpected state in _call_claude retry logic")
 
     async def _stream_claude(
         self,
@@ -315,6 +352,8 @@ class BaseAgent(ABC):
 
         Uses the query() function - creates a new session for each call.
         Yields text chunks as they arrive.
+        Includes automatic retry for initial connection failures only
+        (mid-stream failures are not retried to avoid duplicate data).
 
         Args:
             prompt: The user prompt to send
@@ -327,8 +366,8 @@ class BaseAgent(ABC):
             Text chunks as they arrive
 
         Raises:
-            AgentConnectionError: If connection to Claude fails
-            AgentQueryError: If the streaming query fails
+            AgentConnectionError: If connection to Claude fails after retries
+            AgentQueryError: If the streaming query fails (not retried)
         """
         used_model = model or self.model
 
@@ -341,27 +380,38 @@ class BaseAgent(ABC):
 
         self.logger.debug(f"Streaming from {used_model} (stateless)")
 
-        try:
-            async for message in query(prompt=prompt, options=options):
-                if isinstance(message, AssistantMessage):
-                    for block in message.content:
-                        if isinstance(block, TextBlock):
-                            yield block.text
-        except (ConnectionError, TimeoutError, OSError) as e:
-            self.logger.error(f"SDK connection error in _stream_claude: {e}")
-            raise AgentConnectionError(
-                f"Failed to connect to Claude API: {e}",
-                agent_name=self.name,
-            ) from e
-        except GeneratorExit:
-            self.logger.debug("Stream cancelled by consumer")
-            raise
-        except Exception as e:
-            self.logger.error(f"Unexpected error in _stream_claude: {e}")
-            raise AgentQueryError(
-                f"Streaming query to Claude failed: {e}",
-                agent_name=self.name,
-            ) from e
+        async def _create_stream() -> AsyncIterator[str]:
+            """Inner generator for streaming."""
+            try:
+                async for message in query(prompt=prompt, options=options):
+                    if isinstance(message, AssistantMessage):
+                        for block in message.content:
+                            if isinstance(block, TextBlock):
+                                yield block.text
+            except (ConnectionError, TimeoutError, OSError) as e:
+                self.logger.error(f"SDK connection error in _stream_claude: {e}")
+                raise AgentConnectionError(
+                    f"Failed to connect to Claude API: {e}",
+                    agent_name=self.name,
+                ) from e
+            except GeneratorExit:
+                self.logger.debug("Stream cancelled by consumer")
+                raise
+            except Exception as e:
+                self.logger.error(f"Unexpected error in _stream_claude: {e}")
+                raise AgentQueryError(
+                    f"Streaming query to Claude failed: {e}",
+                    agent_name=self.name,
+                ) from e
+
+        # Use retry wrapper for initial connection failures
+        async for chunk in retry_async_generator(
+            generator_factory=_create_stream,
+            retryable_exceptions=(AgentConnectionError,),
+            config=self.retry_config,
+            logger=self.logger,
+        ):
+            yield chunk
 
         self.logger.debug("Stream complete")
 
@@ -377,6 +427,7 @@ class BaseAgent(ABC):
 
         Uses ClaudeSDKClient for maintaining conversation state.
         Best for multi-turn interactions where context matters.
+        Includes automatic retry with exponential backoff for transient errors.
 
         Args:
             initial_prompt: Optional first message to send
@@ -384,27 +435,49 @@ class BaseAgent(ABC):
             tools: Tools to enable
 
         Raises:
-            AgentConnectionError: If connection to Claude fails
+            AgentConnectionError: If connection to Claude fails after retries
         """
+        import asyncio
+
         options = self._get_options(system_prompt=system, tools=tools)
-        self._client = ClaudeSDKClient(options=options)
-        try:
-            await self._client.connect(prompt=initial_prompt)
-        except (ConnectionError, TimeoutError, OSError) as e:
-            self._client = None
-            self.logger.error(f"Failed to start conversation: {e}")
+        last_exception: Exception | None = None
+
+        for attempt in range(self.retry_config.max_attempts):
+            self._client = ClaudeSDKClient(options=options)
+            try:
+                await self._client.connect(prompt=initial_prompt)
+                self.logger.debug("Started conversation session")
+                return
+            except (ConnectionError, TimeoutError, OSError) as e:
+                self._client = None
+                last_exception = e
+                if attempt < self.retry_config.max_attempts - 1:
+                    delay = self.retry_config.calculate_delay(attempt)
+                    self.logger.warning(
+                        f"Retry {attempt + 1}/{self.retry_config.max_attempts - 1}: "
+                        f"{type(e).__name__}: {e}. Retrying in {delay:.2f}s"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    self.logger.error(f"Failed to start conversation: {e}")
+                    raise AgentConnectionError(
+                        f"Failed to connect to Claude API: {e}",
+                        agent_name=self.name,
+                    ) from e
+            except Exception as e:
+                self._client = None
+                self.logger.error(f"Unexpected error starting conversation: {e}")
+                raise AgentConnectionError(
+                    f"Failed to start conversation: {e}",
+                    agent_name=self.name,
+                ) from e
+
+        # Should not reach here
+        if last_exception is not None:
             raise AgentConnectionError(
-                f"Failed to connect to Claude API: {e}",
+                f"Failed to connect to Claude API: {last_exception}",
                 agent_name=self.name,
-            ) from e
-        except Exception as e:
-            self._client = None
-            self.logger.error(f"Unexpected error starting conversation: {e}")
-            raise AgentConnectionError(
-                f"Failed to start conversation: {e}",
-                agent_name=self.name,
-            ) from e
-        self.logger.debug("Started conversation session")
+            ) from last_exception
 
     async def _continue_conversation(
         self,
@@ -541,25 +614,30 @@ async def quick_query(
     system_prompt: str | None = None,
     model: str | None = None,
     tools: list[str] | None = None,
+    retry_config: RetryConfig | None = None,
 ) -> str:
     """Quick one-off query without creating an agent instance.
 
     Convenience function for simple queries that don't need
-    agent tracking or metadata.
+    agent tracking or metadata. Includes automatic retry with
+    exponential backoff for transient errors.
 
     Args:
         prompt: The prompt to send
         system_prompt: Optional system prompt
         model: Model to use (defaults to balanced)
         tools: Tools to enable (defaults to all built-in)
+        retry_config: Configuration for retry behavior (defaults from settings)
 
     Returns:
         Response text from Claude
 
     Raises:
-        AgentConnectionError: If connection to Claude fails
-        AgentQueryError: If the query fails
+        AgentConnectionError: If connection to Claude fails after retries
+        AgentQueryError: If the query fails (not retried)
     """
+    import asyncio
+
     logger = logging.getLogger("grounded-cv.agents.quick_query")
     options = ClaudeAgentOptions(
         model=model or settings.model_balanced,
@@ -569,18 +647,43 @@ async def quick_query(
         cwd=str(settings.data_dir.resolve()),
     )
 
-    response_text = ""
-    try:
-        async for message in query(prompt=prompt, options=options):
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        response_text += block.text
-    except (ConnectionError, TimeoutError, OSError) as e:
-        logger.error(f"SDK connection error in quick_query: {e}")
-        raise AgentConnectionError(f"Failed to connect to Claude API: {e}") from e
-    except Exception as e:
-        logger.error(f"Unexpected error in quick_query: {e}")
-        raise AgentQueryError(f"Quick query failed: {e}") from e
+    config = retry_config or RetryConfig(
+        max_attempts=settings.retry_max_attempts,
+        base_delay=settings.retry_base_delay,
+        max_delay=settings.retry_max_delay,
+        exponential_base=settings.retry_exponential_base,
+    )
 
-    return response_text
+    last_exception: Exception | None = None
+    for attempt in range(config.max_attempts):
+        response_text = ""
+        try:
+            async for message in query(prompt=prompt, options=options):
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            response_text += block.text
+            return response_text
+        except (ConnectionError, TimeoutError, OSError) as e:
+            last_exception = e
+            if attempt < config.max_attempts - 1:
+                delay = config.calculate_delay(attempt)
+                logger.warning(
+                    f"Retry {attempt + 1}/{config.max_attempts - 1}: "
+                    f"{type(e).__name__}: {e}. Retrying in {delay:.2f}s"
+                )
+                await asyncio.sleep(delay)
+            else:
+                logger.error(f"SDK connection error in quick_query: {e}")
+                raise AgentConnectionError(f"Failed to connect to Claude API: {e}") from e
+        except Exception as e:
+            logger.error(f"Unexpected error in quick_query: {e}")
+            raise AgentQueryError(f"Quick query failed: {e}") from e
+
+    # Should not reach here
+    if last_exception is not None:
+        raise AgentConnectionError(
+            f"Failed to connect to Claude API: {last_exception}"
+        ) from last_exception
+
+    raise RuntimeError("Unexpected state in quick_query retry logic")
