@@ -24,7 +24,7 @@ GroundedCV is a three-phase resume tailoring system that creates personalized, A
 - Docker Compose configuration
 - CI/CD workflows
 - LaTeX templates (resume_ats.tex, cover_letter.tex)
-- Data directory structure with git-crypt encryption
+- Data directory structure with git-crypt configuration
 
 ### Not Yet Implemented
 - Master Resume data entry and storage
@@ -43,13 +43,13 @@ These issues must be completed for the system to function at all:
 
 | Issue | Title | Component | Status |
 |-------|-------|-----------|--------|
-| #18 | [Backend] Implement Master Resume Data Models | Backend | Pending |
-| #19 | [Backend] Implement Master Resume CRUD API | Backend | Pending |
-| #20 | [Backend] Implement JD Parser Agent | Backend | Pending |
-| #21 | [Backend] Implement Resume Writer Agent | Backend | Pending |
-| #22 | [Backend] Implement PDF Generation Pipeline | Backend | Pending |
-| #23 | [Frontend] Implement Master Resume Entry Form | Frontend | Pending |
-| #24 | [Frontend] Implement Job Application Generation Page | Frontend | Pending |
+| #17 | [Backend] Implement Master Resume Data Models | Backend | Pending |
+| #18 | [Backend] Implement Master Resume CRUD API | Backend | Pending |
+| #19 | [Backend] Implement JD Parser Agent | Backend | Pending |
+| #20 | [Backend] Implement Resume Writer Agent | Backend | Pending |
+| #21 | [Backend] Implement PDF Generation Pipeline | Backend | Pending |
+| #22 | [Frontend] Implement Master Resume Entry Form | Frontend | Pending |
+| #23 | [Frontend] Implement Job Application Generation Page | Frontend | Pending |
 
 **Goal:** User can input resume data, paste a job description, and receive a tailored PDF resume.
 
@@ -59,11 +59,11 @@ These issues complete the core feature set:
 
 | Issue | Title | Component | Status |
 |-------|-------|-----------|--------|
-| #25 | [Backend] Implement Anti-Hallucination Validation Agent | Backend | Pending |
-| #26 | [Backend] Implement Company Research Agent | Backend | Pending |
-| #27 | [Backend] Implement Gap Analysis Agent | Backend | Pending |
-| #28 | [Frontend] Implement Research Page | Frontend | Pending |
-| #29 | [Backend] Add Cost Tracking and Display | Backend | Pending |
+| #24 | [Backend] Implement Anti-Hallucination Validation Agent | Backend | Pending |
+| #25 | [Backend] Implement Company Research Agent | Backend | Pending |
+| #26 | [Backend] Implement Gap Analysis Agent | Backend | Pending |
+| #27 | [Frontend] Implement Research Page | Frontend | Pending |
+| #28 | [Backend] Add Cost Tracking and Display | Backend | Pending |
 
 **Goal:** Full three-phase pipeline working with validation and transparency.
 
@@ -75,11 +75,11 @@ Important features and quality improvements:
 
 | Issue | Title | Component | Status |
 |-------|-------|-----------|--------|
-| #30 | [Backend] Implement Document Import (PDF/Markdown) | Backend | Pending |
-| #31 | [Backend] Implement Achievement Extractor Agent | Backend | Pending |
-| #32 | [Frontend] Implement Import Page | Frontend | Pending |
-| #33 | [Backend] Implement Cover Letter Writer Agent | Backend | Pending |
-| #34 | [Backend] Add WebSocket Support for Real-Time Updates | Backend | Pending |
+| #29 | [Backend] Implement Document Import (PDF/Markdown) | Backend | Pending |
+| #30 | [Backend] Implement Achievement Extractor Agent | Backend | Pending |
+| #31 | [Frontend] Implement Import Page | Frontend | Pending |
+| #32 | [Backend] Implement Cover Letter Writer Agent | Backend | Pending |
+| #33 | [Backend] Add WebSocket Support for Real-Time Updates | Backend | Pending |
 
 **Goal:** Streamlined import workflow and real-time generation feedback.
 
@@ -91,17 +91,17 @@ Important features and quality improvements:
 
 | Issue | Title | Component |
 |-------|-------|-----------|
-| #35 | [Backend] Implement A/B Variant Generation | Backend |
-| #36 | [Frontend] Add Version History View | Frontend |
-| #37 | [Backend] Implement LinkedIn Import | Backend |
+| #34 | [Backend] Implement A/B Variant Generation | Backend |
+| #35 | [Frontend] Add Version History View | Frontend |
+| #36 | [Backend] Implement LinkedIn Import | Backend |
 
 ### P4 - Backlog (Future Releases)
 
 | Issue | Title | Component |
 |-------|-------|-----------|
-| #38 | [Backend] Implement Multiple LaTeX Templates | Backend |
-| #39 | [Frontend] Implement Application Tracking Board | Frontend |
-| #40 | [Backend] Add Multi-Language Support | Backend |
+| #37 | [Backend] Implement Multiple LaTeX Templates | Backend |
+| #38 | [Frontend] Implement Application Tracking Board | Frontend |
+| #39 | [Backend] Add Multi-Language Support | Backend |
 
 ---
 
@@ -109,7 +109,7 @@ Important features and quality improvements:
 
 ### Milestone 1: Minimum Viable Product (MVP)
 - **Target:** Week 3-4
-- **Issues:** All P0 issues (#18-#24)
+- **Issues:** All P0 issues (#17-#23)
 - **Success Criteria:**
   - User can enter master resume data through web form
   - User can paste a job description
@@ -119,7 +119,7 @@ Important features and quality improvements:
 
 ### Milestone 2: Complete v1.0
 - **Target:** Week 5-6
-- **Issues:** All P0 + P1 issues (#18-#29)
+- **Issues:** All P0 + P1 issues (#17-#28)
 - **Success Criteria:**
   - Anti-hallucination validation working
   - Company research integrated into tailoring
@@ -129,7 +129,7 @@ Important features and quality improvements:
 
 ### Milestone 3: Enhanced Experience
 - **Target:** Week 7-8
-- **Issues:** All P2 issues (#30-#34)
+- **Issues:** All P2 issues (#29-#33)
 - **Success Criteria:**
   - Can import existing resume documents
   - Cover letter generation working
@@ -138,7 +138,7 @@ Important features and quality improvements:
 
 ### Milestone 4: Advanced Features
 - **Target:** Week 9-12
-- **Issues:** P3 issues (#35-#37)
+- **Issues:** P3 issues (#34-#36)
 - **Success Criteria:**
   - A/B variant comparison working
   - Version history accessible
@@ -206,27 +206,13 @@ P2 Tasks (Import & Polish):
 
 ## Getting Started
 
-To execute the prioritization plan:
-
-1. **Run the setup script:**
-   ```bash
-   # From repository root
-   chmod +x scripts/create-labels-and-issues.sh
-   ./scripts/create-labels-and-issues.sh
-   ```
-
-   Or on Windows:
-   ```powershell
-   .\scripts\create-labels-and-issues.ps1
-   ```
-
-2. **View issues in GitHub:**
+1. **View issues in GitHub:**
    ```bash
    gh issue list --label P0
    gh issue list --label P1
    ```
 
-3. **Start with P0 issues in order:**
+2. **Start with P0 issues in order:**
    - Begin with Master Resume Data Models (foundation for everything)
    - Then Master Resume CRUD API
    - Then JD Parser Agent and Resume Writer Agent in parallel
@@ -243,6 +229,6 @@ To execute the prioritization plan:
 
 3. **Cost Transparency:** Users provide their own API keys. Cost tracking is essential for trust.
 
-4. **Specification Reference:** See `.thoughts/specification.md` for full requirements and design decisions.
+4. **Specification Reference:** See `../.thoughts/specification.md` for full requirements and design decisions.
 
-5. **Agent Patterns:** See `.thoughts/agents.md` for agent designs and `.thoughts/orchestration.md` for pipeline patterns.
+5. **Agent Patterns:** See `../.thoughts/agents.md` for agent designs and `../.thoughts/orchestration.md` for pipeline patterns.
