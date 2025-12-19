@@ -213,7 +213,7 @@ async def generate_ws(websocket: WebSocket):
 
 ## 9. Key Takeaways for GroundedCV
 
-1. **Use `anthropic` Python SDK** - Best fit for our FastAPI backend
+1. **Use `claude_agent_sdk` Python package** - Best fit for our FastAPI backend
 2. **Multi-model strategy** - Haiku/Sonnet/Opus based on task complexity
 3. **Streaming for UX** - Real-time generation feedback via WebSocket
 4. **Parallel variants** - Use `asyncio.gather` for A/B testing
@@ -226,7 +226,7 @@ async def generate_ws(websocket: WebSocket):
 
 Since we chose Python SDK Only, the integration is straightforward:
 
-1. **Backend:** Pure Python with `anthropic` SDK
+1. **Backend:** Pure Python with `claude_agent_sdk`
 2. **Claude Code agents:** Remain separate for CLI/debugging
 3. **No subprocess calls** - Clean separation of concerns
 
