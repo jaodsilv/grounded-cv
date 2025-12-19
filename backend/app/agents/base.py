@@ -102,9 +102,7 @@ class AgentMetadata:
         }
         if self.model_used in pricing:
             rates = pricing[self.model_used]
-            self.cost_usd = (self.tokens_in / 1000) * rates["input"] + (
-                self.tokens_out / 1000
-            ) * rates["output"]
+            self.cost_usd = (self.tokens_in / 1000) * rates["input"] + (self.tokens_out / 1000) * rates["output"]
         return self.cost_usd
 
 
@@ -300,8 +298,7 @@ class BaseAgent(ABC):
                     )
 
                 self.logger.debug(
-                    f"Response: {metadata.tokens_out} tokens, "
-                    f"${metadata.cost_usd:.4f}, {metadata.latency_ms}ms"
+                    f"Response: {metadata.tokens_out} tokens, ${metadata.cost_usd:.4f}, {metadata.latency_ms}ms"
                 )
 
                 return response_text, metadata
@@ -682,8 +679,6 @@ async def quick_query(
 
     # Should not reach here
     if last_exception is not None:
-        raise AgentConnectionError(
-            f"Failed to connect to Claude API: {last_exception}"
-        ) from last_exception
+        raise AgentConnectionError(f"Failed to connect to Claude API: {last_exception}") from last_exception
 
     raise RuntimeError("Unexpected state in quick_query retry logic")
