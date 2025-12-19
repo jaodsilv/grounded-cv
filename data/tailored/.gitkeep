@@ -1,4 +1,0 @@
-# Tailored Applications Directory
-# Contains job-specific tailored applications.
-# Each subdirectory is named: {company}-{job-id}
-# Includes: job_description.md, metadata.yaml, variants/, selected/, logs

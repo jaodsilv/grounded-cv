@@ -56,7 +56,7 @@ class Settings(BaseSettings):
 
     # Paths
     data_dir: Path = Path("../data")
-    templates_dir: Path = Path("../data/templates")
+    templates_dir: Path = Path("../templates")
 
     @property
     def master_resume_dir(self) -> Path:

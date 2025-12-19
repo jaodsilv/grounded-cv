@@ -1,4 +1,0 @@
-# Base Resumes Directory
-# Contains profession-specific base resumes.
-# Each subdirectory is named by profession-slug (e.g., "ai-engineer")
-# Includes: resume.yaml, resume.md, resume.tex, resume.pdf
