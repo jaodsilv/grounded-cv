@@ -42,35 +42,40 @@ Phase 3: Resume Tailoring (Per job description)
 
 ```
 grounded-cv/
-├── backend/                    # FastAPI backend
+├── backend/                       # FastAPI backend
 │   ├── app/
-│   │   ├── main.py            # FastAPI entry point
-│   │   ├── config.py          # Configuration management
-│   │   ├── agents/            # AI agent implementations
-│   │   ├── orchestrators/     # Agent orchestration
-│   │   ├── api/               # API routes
-│   │   ├── models/            # Pydantic models
-│   │   └── services/          # Business logic
+│   │   ├── main.py               # FastAPI entry point
+│   │   ├── config.py             # Configuration management
+│   │   ├── agents/               # AI agent implementations
+│   │   ├── orchestrators/        # Agent orchestration
+│   │   ├── api/                  # API routes
+│   │   ├── models/               # Pydantic models
+│   │   └── services/             # Business logic
 │   ├── requirements.txt
 │   └── Dockerfile
-├── frontend/                   # React frontend
+├── frontend/                      # React frontend
 │   ├── src/
-│   │   ├── components/        # React components
-│   │   ├── pages/             # Page components
-│   │   ├── stores/            # Zustand stores
-│   │   └── services/          # API clients
+│   │   ├── components/           # React components
+│   │   ├── pages/                # Page components
+│   │   ├── stores/               # Zustand stores
+│   │   └── services/             # API clients
 │   ├── package.json
 │   └── Dockerfile
-├── data/                       # User data (git-crypt encrypted)
-│   ├── master-resume/         # Master resume files
-│   ├── market-research/       # Cached market research
-│   ├── company-research/      # Cached company research
-│   ├── base-resumes/          # Profession-specific resumes
-│   ├── tailored/              # Job-specific applications
-│   ├── templates/             # LaTeX templates
-│   └── config/                # User configuration
+├── config/                        # Public configuration templates
+│   ├── personal_info.example.yaml
+│   └── preferences.yaml
+├── templates/                     # LaTeX templates (public)
+│   ├── resume_ats.tex
+│   └── cover_letter.tex
+├── data/                          # Junction to private data repo (see Setup)
+│   ├── master-resume/             # Master resume files
+│   ├── market-research/           # Cached market research
+│   ├── company-research/          # Cached company research
+│   ├── base-resumes/              # Profession-specific resumes
+│   ├── tailored/                  # Job-specific applications
+│   └── config/                    # User configuration (private)
 ├── docker-compose.yml
-└── .thoughts/                  # Design documentation
+└── .thoughts/                     # Design documentation
 ```
 
 ## Quick Start
@@ -89,30 +94,47 @@ grounded-cv/
    cd grounded-cv
    ```
 
-2. Copy environment configuration:
+2. Set up the private data repository:
+
+   The `data/` directory is a junction (Windows) or symlink (Linux/macOS) pointing to a separate private repository
+   that stores your personal resume data. This separation ensures private data is never committed to the main repo.
+
+   **Windows:**
+   ```cmd
+   git clone https://github.com/yourusername/grounded-cv-data.git ../grounded-cv-data
+   mklink /J data ..\grounded-cv-data
+   ```
+
+   **Linux/macOS:**
+   ```bash
+   git clone https://github.com/yourusername/grounded-cv-data.git ../grounded-cv-data
+   ln -s ../grounded-cv-data data
+   ```
+
+3. Copy environment configuration:
    ```bash
    cp .env.example .env
    # Edit .env and add your ANTHROPIC_API_KEY
    ```
 
-3. Set up git-crypt (for data encryption):
+4. Set up git-crypt (for data encryption):
    ```bash
    git-crypt init
    git-crypt add-gpg-user YOUR_GPG_KEY_ID
    ```
 
-4. Copy personal info template:
+5. Copy personal info template:
    ```bash
    cp config/personal_info.example.yaml data/config/personal_info.yaml
    # Edit with your personal information
    ```
 
-5. Start the services:
+6. Start the services:
    ```bash
    docker-compose up -d
    ```
 
-6. Access the application:
+7. Access the application:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
