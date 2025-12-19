@@ -1,0 +1,98 @@
+---
+config:
+  layout: dagre
+---
+flowchart TD
+ subgraph s0["Master Resume Polishing Orchestra"]
+    START --> E1["First version of unpolished Master Resume Written or a new addition to the Master Resume"]
+    s1
+    s2
+    STOP
+    M1["Repeate this process once per new item to add and once in a while and in the first time"] --> s2
+    START@{ shape: start}
+    STOP@{ shape: stop}
+    M1@{ shape: braces}
+    E1@{ shape: event}
+     E1:::EVENT
+     s2:::ORCHESTRA
+     s1:::INPUT_BLOCK
+  end
+  E1 --> IN0["Input Reader"]
+ subgraph s1["Input"]
+        IN0 --> IN1["Resume Best Practices"]
+        IN0 --> IN2["Unpolished Master Resume or Previous Version"]
+        IN0@{ shape: proc}
+        IN1@{ shape: doc}
+        IN2@{ shape: doc}
+        IN0:::INPUT
+        IN1:::INPUT
+        IN2:::INPUT
+  end
+    IN1 --> W1 & W2
+    IN2 --> W1
+    V1 --> J1
+    W2 --> J1
+ subgraph s2["Master Resume Polishing Orchestra"]
+        W1 --> VM1["Version Manager"]
+        VM1 --> V1["Initial Version Stored"]
+        J1 --> A1["Content Quality Assessment Evaluator"]
+        A1 --> D1["Were issues found?"]
+        D1 -- No --> D2["Did the Score Decrease?"]
+        D1 -- Yes --> A2["Release Candidate Writer"]
+        D2 -- No --> D3["Is the Score Good Enough?"]
+        D2 -- Yes --> VM3["Version Manager"]
+        A2 --> RC2["Release Candidate"]
+        RC2 --> VM2["Version Manager"]
+        VM2 --> V2["Version Stored"]
+        V2 --> W2
+        D3 -- No --> A2
+        D3 -- Yes --> OUT1["Release Version"]
+        VM3 --> RESTORED["Previous Version Restored"]
+        RESTORED --> OUT1
+
+        W1@{ shape: stadium}
+        VM1@{ shape: procs}
+        V1@{ shape: docs}
+        J1@{ shape: junction}
+        A1@{ shape: proc}
+        D1@{ shape: decision}
+        D2@{ shape: decision}
+        D3@{ shape: decision}
+        VM3@{ shape: procs}
+        RC2@{ shape: tag-doc}
+        VM2@{ shape: procs}
+        V2@{ shape: docs}
+        W2@{ shape: stadium}
+        OUT1@{ shape: tag-doc}
+        RESTORED@{ shape: docs}
+        A2:::AGENT
+        A1:::AGENT
+        VM1:::AGENT
+        VM2:::AGENT
+        VM3:::AGENT
+        D1:::DECISION
+        D2:::DECISION
+        D3:::DECISION
+        RC2:::RELEASE_CANDIDATE
+        OUT1:::OUTPUT
+        V1:::OUTPUT
+        V2:::OUTPUT
+        RESTORED:::OUTPUT
+        W1:::WAIT
+        W2:::WAIT
+
+        %% Styles
+        style J1 stroke #000
+  end
+    OUT1 --> STOP
+    classDef ORCHESTRA stroke-width:2px, stroke-dasharray:none, stroke:#D50000, fill:transparent, color:#D50000
+    classDef SUBORCHESTRA stroke-width:2px, stroke-dasharray:none, stroke:#2962FF, fill:FFE0B2, color:#FFFFFF
+    classDef INPUT_BLOCK stroke-width:2px, stroke-dasharray:none, stroke:#00C853, fill:transparent, color:#00C853
+    classDef INPUT stroke-width:2px, stroke-dasharray:none, fill:#e6ffe6, color:#000000
+    classDef EVENT stroke-width:2px, stroke-dasharray:none, fill:#BBDEFB, color:#000000
+    classDef RESEARCH stroke-width:2px, stroke-dasharray:none, fill:#FFF9C4, color:#000000
+    classDef AGENT stroke-width:2px, stroke-dasharray:none, fill:#FFE0B2, color:#000000
+    classDef DECISION stroke-width:2px, stroke-dasharray:none, fill:#E1BEE7,stroke:#D50000, color:#000000
+    classDef RELEASE_CANDIDATE stroke-width:2px, stroke-dasharray:none, fill:#FFF9C4, stroke:#D50000, color:#000000
+    classDef OUTPUT stroke-width:2px, stroke-dasharray:none, fill:#C8E6C9, color:#000000
+    classDef WAIT stroke-width:2px, stroke-dasharray:none, fill:#FFB74D, stroke:#F57C00, color:#000000

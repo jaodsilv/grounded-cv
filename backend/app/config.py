@@ -31,10 +31,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
-    # Models
-    model_fast: str = "claude-3-5-haiku-20241022"
-    model_balanced: str = "claude-sonnet-4-5-20250929"
-    model_reasoning: str = "claude-opus-4-5-20251101"
+    # Models (simplified names supported by Claude Agent SDK)
+    model_fast: str = "haiku"
+    model_balanced: str = "sonnet"
+    model_reasoning: str = "opus"
 
     # Agent Configuration
     max_tokens: int = 4096

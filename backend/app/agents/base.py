@@ -95,10 +95,11 @@ class AgentMetadata:
         Returns:
             Calculated cost in USD
         """
+        # Pricing as of December 2024. See https://www.anthropic.com/pricing#anthropic-api
         pricing = {
-            "claude-opus-4-5-20251101": {"input": 0.015, "output": 0.075},
-            "claude-sonnet-4-5-20250929": {"input": 0.003, "output": 0.015},
-            "claude-3-5-haiku-20241022": {"input": 0.001, "output": 0.005},
+            "opus": {"input": 0.015, "output": 0.075},
+            "sonnet": {"input": 0.003, "output": 0.015},
+            "haiku": {"input": 0.001, "output": 0.005},
         }
         if self.model_used in pricing:
             rates = pricing[self.model_used]
