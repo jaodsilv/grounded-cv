@@ -35,9 +35,8 @@ dist/
 .env.*.local
 *.env
 
-# Data (handled by git-crypt, but exclude unencrypted temporary files)
-data/master-resume/sources/*.pdf
-data/tailored/*/variants/
+# Data (junction to private data repository)
+data/
 *.pdf.tmp
 
 # Testing

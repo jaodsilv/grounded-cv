@@ -103,7 +103,7 @@ grounded-cv/
 
 4. Copy personal info template:
    ```bash
-   cp data/config/personal_info.example.yaml data/config/personal_info.yaml
+   cp config/personal_info.example.yaml data/config/personal_info.yaml
    # Edit with your personal information
    ```
 
