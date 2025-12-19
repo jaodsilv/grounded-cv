@@ -4,6 +4,8 @@
 
 This document captures the orchestration patterns from the ats-research mermaid diagrams, informing the architecture of GroundedCV.
 
+> **Diagrams:** The source mermaid diagram files are available in [`../diagrams/`](../diagrams/).
+
 ---
 
 ## 1. Master Orchestration Flow
@@ -206,6 +208,8 @@ AI_DETECTION_THRESHOLD = 0.999  # For cover letters
 ## 8. State Management Pattern
 
 From `state/run_context.py`:
+
+> **Note:** The `state/run_context.py` path shown is the design-time reference. In the implementation, this corresponds to the `backend/app/` directory structure.
 
 ```python
 class RunContext:

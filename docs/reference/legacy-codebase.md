@@ -4,6 +4,8 @@
 
 This document captures the architecture and patterns from the original ats-research application at `D:\src\ats-research\main\src`.
 
+> **Note:** This is a historical analysis document. The referenced path is the original development environment and may not exist in all setups.
+
 ---
 
 ## 1. Project Structure
@@ -91,6 +93,8 @@ src/
 ## 2. Key Patterns to Cherry-Pick
 
 ### 2.1 BaseAgent Pattern (`agents/base_agent.py`)
+
+> **Note:** This is a simplified representation. The actual implementation includes retry configuration, stateless vs conversational modes, DEFAULT_TOOLS list, and AgentMetadata/AgentResponse dataclasses.
 
 ```python
 class BaseAgent:

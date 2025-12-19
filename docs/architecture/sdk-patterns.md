@@ -14,11 +14,11 @@ This document captures the key patterns and usage information from the Claude Ag
 - **Best For:** Our Python backend with specific orchestration needs
 
 ### Claude Agent SDK (High-Level)
-- **Package:** `@anthropic-ai/claude-agent-sdk` (npm only)
-- **Use Cases:** Autonomous agents, file operations, code modification
-- **Note:** TypeScript only, not suitable for our Python backend
+- **Package:** `claude_agent_sdk` (Python)
+- **Use Cases:** Autonomous agents, simplified model selection, conversation management
+- **Note:** Provides higher-level abstractions over the raw Anthropic SDK
 
-**Decision:** Use `anthropic` Python SDK for GroundedCV backend.
+**Decision:** Use `claude_agent_sdk` Python package for GroundedCV backend.
 
 ---
 
@@ -35,9 +35,9 @@ This document captures the key patterns and usage information from the Claude Ag
 ```python
 class ModelSelector:
     MODEL_MAP = {
-        "parsing": "claude-3-5-haiku-20241022",
-        "writing": "claude-sonnet-4-5-20250929",
-        "reasoning": "claude-opus-4-5-20251101",
+        "parsing": "haiku",
+        "writing": "sonnet",
+        "reasoning": "opus",
     }
 
     def select(self, task_type: str) -> str:
@@ -94,7 +94,7 @@ For real-time UI updates during generation:
 ```python
 async def stream_generation(prompt: str):
     async with client.messages.stream(
-        model="claude-sonnet-4-5-20250929",
+        model="sonnet",
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}],
     ) as stream:
@@ -128,7 +128,7 @@ tools = [
 ]
 
 response = await client.messages.create(
-    model="claude-sonnet-4-5-20250929",
+    model="sonnet",
     max_tokens=2048,
     tools=tools,
     messages=[{"role": "user", "content": research_prompt}],
@@ -163,12 +163,15 @@ class RobustClient:
 
 ## 7. Cost Tracking Implementation
 
+> **Pricing verified:** December 2024. For current pricing, see
+> [Anthropic API Pricing](https://www.anthropic.com/pricing#anthropic-api).
+
 ```python
 class CostTracker:
     PRICING = {
-        "claude-opus-4-5-20251101": {"input": 0.015, "output": 0.075},
-        "claude-sonnet-4-5-20250929": {"input": 0.003, "output": 0.015},
-        "claude-3-5-haiku-20241022": {"input": 0.001, "output": 0.005},
+        "opus": {"input": 0.015, "output": 0.075},
+        "sonnet": {"input": 0.003, "output": 0.015},
+        "haiku": {"input": 0.001, "output": 0.005},
     }
 
     def calculate_cost(self, model: str, usage: dict) -> float:
@@ -196,7 +199,7 @@ async def generate_ws(websocket: WebSocket):
     data = await websocket.receive_json()
 
     async with client.messages.stream(
-        model="claude-sonnet-4-5-20250929",
+        model="sonnet",
         max_tokens=4096,
         messages=[{"role": "user", "content": data["prompt"]}],
     ) as stream:

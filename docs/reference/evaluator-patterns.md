@@ -10,6 +10,8 @@ This document captures the patterns and capabilities from the existing job-hunti
 
 Located at: `D:\src\claudius\main\job-hunting.claude\agents\cover-letter-evaluator\`
 
+> **Note:** These evaluator patterns will be available as a Claude Code plugin at [github.com/jaodsilv/claudius](https://github.com/jaodsilv/claudius).
+
 ### 1.1 ATS Compatibility Agent (`ats.md`)
 **Purpose:** Evaluate ATS friendliness
 **Model:** Sonnet

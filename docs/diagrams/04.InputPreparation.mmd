@@ -1,0 +1,66 @@
+---
+config:
+  layout: dagre
+---
+flowchart TD
+ subgraph s0["Resume/Cover Letter Tailoring Orchestra"]
+        START["Start"]
+        START --> E1["Job Positions Found"]
+        s1
+        START@{ shape: start}
+        E1@{ shape: event}
+        STOP@{ shape: stop}
+        E1:::EVENT
+        s1:::INPUT_BLOCK
+ end
+E1 -- Single Agent Job --> SA0["Input Reader"]
+E1 -- 1 subagent per JD
+Multiple Agents Job --> MA1["Document Fetcher (Fetch Raw Job Descriptions)"]
+ subgraph s1["Input and Data Preparation"]
+        SA0["Input Reader"]
+        SA0 -- Read --> IN0["Resume Best Practices Guidelines"]
+        SA0 -- Read --> IN1["Cover Letter Best Practices Guidelines"]
+        SA0 -- Read --> IN2["Master Resume"]
+        SA0 -- Read --> IN3["Company Culture Report"]
+        MA1 -- Write --> OUT3["Raw Job Descriptions"]
+        OUT3 -- 1 subagent per JD
+Multiple Agents Job --> MA2["Job Description Parser"]
+        MA2 -- Write --> OUT2["Parsed Job Descriptions"]
+
+        SA0@{ shape: proc}
+        IN0@{ shape: doc}
+        IN1@{ shape: doc}
+        IN2@{ shape: doc}
+        IN3@{ shape: doc}
+        MA1@{ shape: procs}
+        OUT3@{ shape: docs}
+        MA2@{ shape: procs}
+        OUT2@{ shape: docs}
+         SA0:::AGENT
+         IN0:::INPUT
+         IN1:::INPUT
+         IN2:::INPUT
+         IN3:::INPUT
+         OUT3:::OUTPUT
+         MA1:::AGENT
+         MA2:::AGENT
+         OUT2:::OUTPUT
+  end
+
+IN0 --> STOP
+IN1 --> STOP
+IN2 --> STOP
+IN3 --> STOP
+OUT2 --> STOP
+
+classDef ORCHESTRA stroke-width:2px, stroke-dasharray:none, stroke:#D50000, fill:transparent, color:#D50000
+classDef SUBORCHESTRA stroke-width:2px, stroke-dasharray:none, stroke:#2962FF, fill:FFE0B2, color:#FFFFFF
+classDef INPUT_BLOCK stroke-width:2px, stroke-dasharray:none, stroke:#00C853, fill:transparent, color:#00C853
+classDef INPUT stroke-width:2px, stroke-dasharray:none, fill:#e6ffe6, color:#000000
+classDef EVENT stroke-width:2px, stroke-dasharray:none, fill:#BBDEFB, color:#000000
+classDef RESEARCH stroke-width:2px, stroke-dasharray:none, fill:#FFF9C4, color:#000000
+classDef AGENT stroke-width:2px, stroke-dasharray:none, fill:#FFE0B2, color:#000000
+classDef DECISION stroke-width:2px, stroke-dasharray:none, fill:#E1BEE7,stroke:#D50000, color:#000000
+classDef RELEASE_CANDIDATE stroke-width:2px, stroke-dasharray:none, fill:#FFF9C4, stroke:#D50000, color:#000000
+classDef OUTPUT stroke-width:2px, stroke-dasharray:none, fill:#C8E6C9, color:#000000
+classDef WAIT stroke-width:2px, stroke-dasharray:none, fill:#FFB74D, stroke:#F57C00, color:#000000
