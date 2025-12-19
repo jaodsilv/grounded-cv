@@ -739,9 +739,7 @@ class TestBaseAgentRetry:
             assert call_count == 2
 
     @pytest.mark.asyncio
-    async def test_start_conversation_retries_on_connection_error(
-        self, mock_settings, mock_sdk_client
-    ):
+    async def test_start_conversation_retries_on_connection_error(self, mock_settings, mock_sdk_client):
         """Test _start_conversation retries on connection failure."""
         from app.agents.base import BaseAgent
         from app.utils.retry import RetryConfig
