@@ -232,3 +232,59 @@ class TestAchievements:
 
         # Warning about incomplete entry
         assert "Missing Result" in caplog.text
+
+
+class TestAchievementsFileErrorHandling:
+    """Tests for Achievements file I/O error scenarios."""
+
+    def test_markdown_file_not_found_includes_model_name(self, temp_directory):
+        """Test FileNotFoundError includes model name."""
+        missing_file = temp_directory / "missing.md"
+
+        with pytest.raises(FileNotFoundError, match="Achievements"):
+            Achievements.from_markdown_file(missing_file)
+
+    def test_markdown_file_not_found_includes_path(self, temp_directory):
+        """Test FileNotFoundError includes file path."""
+        missing_file = temp_directory / "missing.md"
+
+        with pytest.raises(FileNotFoundError, match="missing.md"):
+            Achievements.from_markdown_file(missing_file)
+
+    def test_markdown_write_permission_error_includes_model_name(self, temp_directory, sample_achievement_data):
+        """Test PermissionError includes model name on write."""
+        from pathlib import Path
+        from unittest.mock import patch
+
+        achievements = Achievements(entries=[Achievement(**sample_achievement_data)])
+        md_path = temp_directory / "test.md"
+
+        with patch.object(Path, "write_text", side_effect=PermissionError("Access denied")):
+            with pytest.raises(PermissionError, match="Achievements"):
+                achievements.to_markdown_file(md_path)
+
+    def test_markdown_write_permission_error_includes_path(self, temp_directory, sample_achievement_data):
+        """Test PermissionError includes file path on write."""
+        from pathlib import Path
+        from unittest.mock import patch
+
+        achievements = Achievements(entries=[Achievement(**sample_achievement_data)])
+        md_path = temp_directory / "test.md"
+
+        with patch.object(Path, "write_text", side_effect=PermissionError("Access denied")):
+            with pytest.raises(PermissionError, match="test.md"):
+                achievements.to_markdown_file(md_path)
+
+    def test_markdown_write_oserror_includes_context(self, temp_directory, sample_achievement_data):
+        """Test OSError includes model name and path on write."""
+        from pathlib import Path
+        from unittest.mock import patch
+
+        achievements = Achievements(entries=[Achievement(**sample_achievement_data)])
+        md_path = temp_directory / "test.md"
+
+        error = OSError("Disk full")
+        error.strerror = "No space left on device"
+        with patch.object(Path, "write_text", side_effect=error):
+            with pytest.raises(OSError, match="Achievements"):
+                achievements.to_markdown_file(md_path)

@@ -57,6 +57,54 @@ class TestWhitespaceValidation:
         assert profile.name == "Jane"
 
 
+class TestWriteErrorHandling:
+    """Tests for write operation error scenarios."""
+
+    def test_yaml_write_permission_error_includes_class_name(self, temp_directory):
+        """Test PermissionError includes class name."""
+        from pathlib import Path
+        from unittest.mock import patch
+
+        from app.models.profile import Profile
+
+        profile = Profile(name="Test", email="test@example.com")
+        yaml_path = temp_directory / "test.yaml"
+
+        with patch.object(Path, "write_text", side_effect=PermissionError("Access denied")):
+            with pytest.raises(PermissionError, match="Profile"):
+                profile.to_yaml_file(yaml_path)
+
+    def test_yaml_write_permission_error_includes_path(self, temp_directory):
+        """Test PermissionError includes file path."""
+        from pathlib import Path
+        from unittest.mock import patch
+
+        from app.models.profile import Profile
+
+        profile = Profile(name="Test", email="test@example.com")
+        yaml_path = temp_directory / "test.yaml"
+
+        with patch.object(Path, "write_text", side_effect=PermissionError("Access denied")):
+            with pytest.raises(PermissionError, match="test.yaml"):
+                profile.to_yaml_file(yaml_path)
+
+    def test_yaml_write_oserror_includes_context(self, temp_directory):
+        """Test OSError includes class name and path."""
+        from pathlib import Path
+        from unittest.mock import patch
+
+        from app.models.profile import Profile
+
+        profile = Profile(name="Test", email="test@example.com")
+        yaml_path = temp_directory / "test.yaml"
+
+        error = OSError("Disk full")
+        error.strerror = "No space left on device"
+        with patch.object(Path, "write_text", side_effect=error):
+            with pytest.raises(OSError, match="Profile"):
+                profile.to_yaml_file(yaml_path)
+
+
 class TestAddressValidation:
     """Tests for Address field validation."""
 

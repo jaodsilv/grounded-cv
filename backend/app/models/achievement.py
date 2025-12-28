@@ -161,13 +161,47 @@ class Achievements(GroundedModel):
 
     @classmethod
     def from_markdown_file(cls, file_path: Path) -> Self:
-        """Load achievements from Markdown file."""
-        content = file_path.read_text(encoding="utf-8")
+        """Load achievements from Markdown file.
+
+        Args:
+            file_path: Path to Markdown file
+
+        Returns:
+            Achievements instance with source tracking
+
+        Raises:
+            FileNotFoundError: If file does not exist
+            PermissionError: If file cannot be read
+            UnicodeDecodeError: If file encoding is invalid
+        """
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Cannot load Achievements: file not found at '{file_path}'") from e
+        except PermissionError as e:
+            raise PermissionError(f"Cannot load Achievements: permission denied reading '{file_path}'") from e
+        except UnicodeDecodeError as e:
+            raise UnicodeDecodeError(
+                e.encoding, e.object, e.start, e.end, f"Cannot load Achievements: invalid encoding in '{file_path}'"
+            ) from e
         return cls.from_markdown(content, source_file=file_path)
 
     def to_markdown_file(self, file_path: Path) -> None:
-        """Save achievements to Markdown file."""
-        file_path.write_text(self.to_markdown(), encoding="utf-8")
+        """Save achievements to Markdown file.
+
+        Args:
+            file_path: Destination path for Markdown file
+
+        Raises:
+            PermissionError: If file cannot be written
+            OSError: If write fails (disk full, etc.)
+        """
+        try:
+            file_path.write_text(self.to_markdown(), encoding="utf-8")
+        except PermissionError as e:
+            raise PermissionError(f"Cannot save Achievements: permission denied writing '{file_path}'") from e
+        except OSError as e:
+            raise OSError(f"Cannot save Achievements to '{file_path}': {e.strerror}") from e
 
     def get_by_keyword(self, keyword: str) -> list[Achievement]:
         """Find achievements with a specific keyword."""

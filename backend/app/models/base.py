@@ -100,8 +100,19 @@ class GroundedModel(BaseModel):
 
         Args:
             file_path: Destination path for YAML file
+
+        Raises:
+            PermissionError: If file cannot be written
+            OSError: If write fails (disk full, etc.)
         """
-        file_path.write_text(self.to_yaml(), encoding="utf-8")
+        try:
+            file_path.write_text(self.to_yaml(), encoding="utf-8")
+        except PermissionError as e:
+            raise PermissionError(
+                f"Cannot save {self.__class__.__name__}: permission denied writing '{file_path}'"
+            ) from e
+        except OSError as e:
+            raise OSError(f"Cannot save {self.__class__.__name__} to '{file_path}': {e.strerror}") from e
 
     def get_source_file(self) -> Path | None:
         """Get the source file path for anti-hallucination tracking."""
