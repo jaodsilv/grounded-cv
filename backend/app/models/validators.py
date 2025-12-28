@@ -2,6 +2,7 @@
 
 import re
 from datetime import date
+from urllib.parse import urlparse
 
 from pydantic_core import PydanticCustomError
 
@@ -56,24 +57,35 @@ def validate_linkedin_url(value: str) -> str:
     """
     original = value
 
-    # Normalize: add https:// if missing
+    # Normalize: add https:// if missing protocol
     if not value.startswith(("http://", "https://")):
-        if value.startswith("www."):
-            value = f"https://{value}"
-        elif value.startswith("linkedin.com"):
+        if "/" in value or "." in value:
+            # Looks like a URL/path
             value = f"https://{value}"
         else:
             # Assume it's just the username
             value = f"https://linkedin.com/in/{value}"
 
-    # Validate pattern
-    pattern = r"^https?://(www\.)?linkedin\.com/in/[\w\-]+/?$"
-    if not re.match(pattern, value):
+    # Parse and validate the host
+    parsed = urlparse(value)
+    host = parsed.hostname or ""
+
+    # Check exact match or subdomain of linkedin.com
+    if host != "linkedin.com" and not host.endswith(".linkedin.com"):
         raise PydanticCustomError(
             "linkedin_url",
             "Invalid LinkedIn URL. Expected: linkedin.com/in/username",
             {"value": original},
         )
+
+    # Validate path pattern
+    if not re.match(r"^/in/[\w\-]+/?$", parsed.path):
+        raise PydanticCustomError(
+            "linkedin_url",
+            "Invalid LinkedIn URL. Expected: linkedin.com/in/username",
+            {"value": original},
+        )
+
     return value
 
 
@@ -96,22 +108,35 @@ def validate_github_url(value: str) -> str:
     """
     original = value
 
-    # Normalize: add https:// if missing
+    # Normalize: add https:// if missing protocol
     if not value.startswith(("http://", "https://")):
-        if value.startswith("github.com"):
+        if "/" in value or "." in value:
+            # Looks like a URL/path
             value = f"https://{value}"
         else:
             # Assume it's just the username
             value = f"https://github.com/{value}"
 
-    # Validate pattern (username only, not repo paths)
-    pattern = r"^https?://(www\.)?github\.com/[\w\-]+/?$"
-    if not re.match(pattern, value):
+    # Parse and validate the host
+    parsed = urlparse(value)
+    host = parsed.hostname or ""
+
+    # Check exact match or subdomain of github.com
+    if host != "github.com" and not host.endswith(".github.com"):
         raise PydanticCustomError(
             "github_url",
             "Invalid GitHub URL. Expected: github.com/username",
             {"value": original},
         )
+
+    # Validate path pattern (username only, not repo paths)
+    if not re.match(r"^/[\w\-]+/?$", parsed.path):
+        raise PydanticCustomError(
+            "github_url",
+            "Invalid GitHub URL. Expected: github.com/username",
+            {"value": original},
+        )
+
     return value
 
 
