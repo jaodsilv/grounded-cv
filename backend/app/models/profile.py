@@ -16,8 +16,8 @@ class Address(GroundedModel):
     """Physical address for cover letters."""
 
     street: str | None = None
-    city: str
-    state: str
+    city: str = Field(..., min_length=1, description="City name")
+    state: str = Field(..., min_length=1, description="State/province")
     zip: str | None = Field(default=None, alias="zip_code")
     country: str = "USA"
 

@@ -16,7 +16,7 @@ class Degree(GroundedModel):
     institution: str = Field(..., min_length=1, description="University/College name")
     location: str | None = None
     graduation_date: date | None = None
-    gpa: float | None = Field(default=None, ge=0.0, le=4.0)
+    gpa: float | None = Field(default=None, ge=0.0, le=4.0, description="GPA on 4.0 scale (US standard)")
     honors: list[str] = Field(default_factory=list)
     relevant_coursework: list[str] = Field(default_factory=list)
 
@@ -64,8 +64,8 @@ class Education(GroundedModel):
     degrees: list[Degree] = Field(default_factory=list)
     certifications: list[Certification] = Field(default_factory=list)
 
-    def get_highest_degree(self) -> Degree | None:
-        """Get the highest/most recent degree."""
+    def get_most_recent_degree(self) -> Degree | None:
+        """Get the most recent degree by graduation date."""
         if not self.degrees:
             return None
         # Sort by graduation date, most recent first

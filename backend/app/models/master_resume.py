@@ -85,6 +85,10 @@ class MasterResume(GroundedModel):
     def to_directory(self, directory: Path) -> None:
         """Save Master Resume to directory structure.
 
+        Note: Empty sections are not written. Existing files from previous
+        saves are NOT deleted, which may leave stale data if sections were
+        cleared. Use shutil.rmtree(directory) first for a clean write.
+
         Args:
             directory: Target directory (will be created if not exists)
         """

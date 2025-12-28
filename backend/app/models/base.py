@@ -54,8 +54,15 @@ class GroundedModel(BaseModel):
 
         Returns:
             Validated model instance
+
+        Raises:
+            ValueError: If YAML content is empty
+            ValidationError: If content doesn't match model schema
         """
         data = yaml.safe_load(yaml_content)
+        if data is None:
+            source_context = f" from '{source_file}'" if source_file else ""
+            raise ValueError(f"Cannot load {cls.__name__}{source_context}: YAML content is empty")
         instance = cls.model_validate(data)
         instance._source_file = source_file
         return instance
@@ -69,8 +76,23 @@ class GroundedModel(BaseModel):
 
         Returns:
             Validated model instance with source tracking
+
+        Raises:
+            FileNotFoundError: If file does not exist
+            PermissionError: If file cannot be read
+            UnicodeDecodeError: If file encoding is invalid
+            ValueError: If file is empty
         """
-        content = file_path.read_text(encoding="utf-8")
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Cannot load {cls.__name__}: file not found at '{file_path}'") from e
+        except PermissionError as e:
+            raise PermissionError(f"Cannot load {cls.__name__}: permission denied reading '{file_path}'") from e
+        except UnicodeDecodeError as e:
+            raise UnicodeDecodeError(
+                e.encoding, e.object, e.start, e.end, f"Cannot load {cls.__name__}: invalid encoding in '{file_path}'"
+            ) from e
         return cls.from_yaml(content, source_file=file_path)
 
     def to_yaml_file(self, file_path: Path) -> None:

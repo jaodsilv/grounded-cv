@@ -183,3 +183,52 @@ class TestAchievements:
         loaded = Achievements.from_markdown_file(md_path)
         # Note: Achievements uses _source_file directly since it has different serialization
         assert loaded._source_file == md_path
+
+    def test_from_markdown_skips_incomplete_entries(self, caplog):
+        """Test incomplete STAR entries are skipped with warning."""
+        import logging
+
+        incomplete_md = """# Achievements
+
+### Incomplete Entry
+**Situation:** Only situation provided
+**Task:** Only task provided
+"""
+        with caplog.at_level(logging.WARNING):
+            achievements = Achievements.from_markdown(incomplete_md)
+
+        # Entry should be skipped
+        assert len(achievements.entries) == 0
+
+        # Warning should be logged
+        assert "Skipping achievement section" in caplog.text
+        assert "Incomplete Entry" in caplog.text
+        assert "action" in caplog.text.lower()
+        assert "result" in caplog.text.lower()
+
+    def test_from_markdown_mixed_complete_incomplete(self, caplog):
+        """Test parsing with mix of complete and incomplete entries."""
+        import logging
+
+        mixed_md = """# Achievements
+
+### Complete Entry
+**Situation:** Context here
+**Task:** Responsibility here
+**Action:** Steps taken
+**Result:** Outcome achieved
+
+### Missing Result
+**Situation:** Context
+**Task:** Task
+**Action:** Action
+"""
+        with caplog.at_level(logging.WARNING):
+            achievements = Achievements.from_markdown(mixed_md)
+
+        # Only complete entry should be parsed
+        assert len(achievements.entries) == 1
+        assert achievements.entries[0].title == "Complete Entry"
+
+        # Warning about incomplete entry
+        assert "Missing Result" in caplog.text

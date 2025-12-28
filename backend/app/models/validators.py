@@ -78,8 +78,8 @@ def validate_linkedin_url(value: str) -> str:
             {"value": original},
         )
 
-    # Validate path pattern
-    if not re.match(r"^/in/[\w\-]+/?$", parsed.path):
+    # Validate path pattern (allow word chars, hyphens, and periods in usernames)
+    if not re.match(r"^/in/[\w\.\-]+/?$", parsed.path):
         raise PydanticCustomError(
             "linkedin_url",
             "Invalid LinkedIn URL. Expected: linkedin.com/in/username",
@@ -129,8 +129,8 @@ def validate_github_url(value: str) -> str:
             {"value": original},
         )
 
-    # Validate path pattern (username only, not repo paths)
-    if not re.match(r"^/[\w\-]+/?$", parsed.path):
+    # Validate path pattern (username only, not repo paths; allow periods in usernames)
+    if not re.match(r"^/[\w\.\-]+/?$", parsed.path):
         raise PydanticCustomError(
             "github_url",
             "Invalid GitHub URL. Expected: github.com/username",

@@ -12,6 +12,8 @@ from app.models.validators import parse_date_flexible
 class ExperienceEntry(GroundedModel):
     """Single work experience entry."""
 
+    model_config = {"validate_assignment": True}  # Enforce date invariants on assignment
+
     # Required fields
     title: str = Field(..., min_length=1, description="Job title")
     company: str = Field(..., min_length=1, description="Company name")
@@ -48,7 +50,12 @@ class ExperienceEntry(GroundedModel):
 
     @model_validator(mode="after")
     def validate_dates(self) -> "ExperienceEntry":
-        """Ensure end_date is after start_date or is_current is set."""
+        """Ensure end_date is after start_date or is_current is set.
+
+        Side effect: If end_date is None and is_current is False,
+        is_current will be automatically set to True to indicate
+        this is a current position.
+        """
         if self.end_date is None and not self.is_current:
             self.is_current = True
         if self.end_date and self.end_date < self.start_date:

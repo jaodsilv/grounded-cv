@@ -102,7 +102,7 @@ class TestEducation:
         assert edu.degrees == []
         assert edu.certifications == []
 
-    def test_get_highest_degree(self, sample_degree_data):
+    def test_get_most_recent_degree(self, sample_degree_data):
         """Test getting most recent degree."""
         older = Degree(
             degree="BS CS",
@@ -115,14 +115,14 @@ class TestEducation:
             graduation_date="2018-05-01",
         )
         edu = Education(degrees=[older, newer])
-        highest = edu.get_highest_degree()
-        assert highest is not None
-        assert highest.degree == "MS CS"
+        most_recent = edu.get_most_recent_degree()
+        assert most_recent is not None
+        assert most_recent.degree == "MS CS"
 
-    def test_get_highest_degree_empty(self):
-        """Test get_highest_degree returns None when empty."""
+    def test_get_most_recent_degree_empty(self):
+        """Test get_most_recent_degree returns None when empty."""
         edu = Education()
-        assert edu.get_highest_degree() is None
+        assert edu.get_most_recent_degree() is None
 
     def test_get_active_certifications(self, sample_certification_data):
         """Test filtering active certifications."""

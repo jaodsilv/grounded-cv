@@ -31,6 +31,16 @@ def _normalize_skill(v: Any) -> str | Skill:
 
 
 SkillEntry = Annotated[str | Skill, BeforeValidator(_normalize_skill)]
+"""Type for skill list entries.
+
+Accepts either:
+- A simple string: "Python" -> stored as-is
+- A dict with skill details: {"name": "Python", "proficiency": "expert"} -> Skill object
+- A Skill object directly
+
+This allows flexible input while maintaining type safety. Simple skills can be
+listed as strings for brevity, while detailed skills use the full Skill model.
+"""
 
 
 class Skills(GroundedModel):

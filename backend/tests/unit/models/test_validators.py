@@ -70,6 +70,16 @@ class TestValidateLinkedInUrl:
         with pytest.raises(PydanticCustomError, match="Invalid LinkedIn URL"):
             validate_linkedin_url("https://twitter.com/janedeveloper")
 
+    def test_username_with_period(self):
+        """Test username with period is accepted."""
+        result = validate_linkedin_url("https://linkedin.com/in/john.doe")
+        assert result == "https://linkedin.com/in/john.doe"
+
+    def test_linkedin_in_path_with_period(self):
+        """Test linkedin.com/in/john.doe URL is accepted."""
+        result = validate_linkedin_url("linkedin.com/in/john.doe")
+        assert result == "https://linkedin.com/in/john.doe"
+
 
 class TestValidateGitHubUrl:
     """Tests for GitHub URL validation."""
@@ -93,6 +103,16 @@ class TestValidateGitHubUrl:
         """Test invalid GitHub URL is rejected."""
         with pytest.raises(PydanticCustomError, match="Invalid GitHub URL"):
             validate_github_url("https://gitlab.com/janedeveloper")
+
+    def test_username_with_period(self):
+        """Test username with period is accepted."""
+        result = validate_github_url("https://github.com/john.doe")
+        assert result == "https://github.com/john.doe"
+
+    def test_github_path_with_period(self):
+        """Test github.com/john.doe URL is accepted."""
+        result = validate_github_url("github.com/john.doe")
+        assert result == "https://github.com/john.doe"
 
 
 class TestParseDateFlexible:

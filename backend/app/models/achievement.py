@@ -1,5 +1,6 @@
 """Achievement model with STAR format support."""
 
+import logging
 import re
 from pathlib import Path
 from typing import ClassVar, Self
@@ -7,6 +8,8 @@ from typing import ClassVar, Self
 from pydantic import Field, PrivateAttr, model_validator
 
 from app.models.base import GroundedModel
+
+logger = logging.getLogger(__name__)
 
 
 class Achievement(GroundedModel):
@@ -30,7 +33,7 @@ class Achievement(GroundedModel):
     related_experience: str | None = Field(default=None, description="Company/role this achievement is from")
 
     @model_validator(mode="after")
-    def extract_metrics(self) -> "Achievement":
+    def extract_metrics(self) -> Self:
         """Auto-extract metrics from result if not provided."""
         if not self.metrics:
             # Find percentage patterns
@@ -139,8 +142,17 @@ class Achievements(GroundedModel):
                 keywords = [k.strip() for k in keywords_match.group(1).split(",")]
                 achievement_data["keywords"] = keywords
 
-            # Validate we have all required fields
-            if all(k in achievement_data for k in ["situation", "task", "action", "result"]):
+            # Validate we have all required STAR fields
+            required_fields = ["situation", "task", "action", "result"]
+            missing_fields = [f for f in required_fields if f not in achievement_data]
+
+            if missing_fields:
+                logger.warning(
+                    "Skipping achievement section '%s': missing STAR component(s): %s",
+                    title,
+                    ", ".join(missing_fields),
+                )
+            else:
                 achievements.append(Achievement.model_validate(achievement_data))
 
         instance = cls(entries=achievements)

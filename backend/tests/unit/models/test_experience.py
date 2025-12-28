@@ -184,3 +184,33 @@ class TestExperienceSerialization:
         assert len(loaded.entries) == 1
         assert loaded.entries[0].company == "Tech Corp"
         assert loaded.entries[0].bullets == sample_experience_entry["bullets"]
+
+
+class TestExperienceInvariantEnforcement:
+    """Tests for date invariant enforcement after construction."""
+
+    def test_end_date_before_start_date_rejected_on_assignment(self):
+        """Test setting end_date before start_date raises error."""
+        entry = ExperienceEntry(
+            title="Engineer",
+            company="Company",
+            start_date="2022-01-01",
+            end_date="2023-01-01",
+        )
+
+        # Attempting to set end_date before start_date should raise
+        with pytest.raises(ValidationError, match="end_date must be after start_date"):
+            entry.end_date = date(2020, 1, 1)
+
+    def test_valid_end_date_assignment_accepted(self):
+        """Test setting valid end_date is accepted."""
+        entry = ExperienceEntry(
+            title="Engineer",
+            company="Company",
+            start_date="2022-01-01",
+            end_date="2023-01-01",
+        )
+
+        # Setting a valid end_date should work
+        entry.end_date = date(2024, 1, 1)
+        assert entry.end_date == date(2024, 1, 1)
