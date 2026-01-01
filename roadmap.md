@@ -61,7 +61,7 @@ These are implicit but critical foundations:
 
 | Component | Approach | Notes |
 |-----------|----------|-------|
-| Master Resume storage | File-based JSON with git-crypt | Leverages existing data directory setup |
+| Master Resume storage | File-based YAML/Markdown with git-crypt | Leverages existing data directory setup |
 | Error handling framework | Retry logic + user-facing messages | Retry logic exists; add error display |
 | Deployment target | Docker Compose | Already configured in Sprint 1 |
 | Testing strategy | Unit tests for agents, E2E for flow | Integrated into each issue |
@@ -197,7 +197,7 @@ P2 Tasks (Import & Polish):
   Cover Letter Writer (#32) ◄──── Company Research (#25)
 
 Critical Path: #17 → #18 → #20 → #24 → #21 → #23
-Parallelizable: #19 (after #17), #22 (after #18), #25 (after P0)
+Parallelizable: #19 (independent), #22 (after #18), #25 (after P0)
 ```
 
 ### Risk Matrix
