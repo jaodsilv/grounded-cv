@@ -262,9 +262,9 @@ Parallelizable: #19 (independent), #22 (after #18), #25 (after P0)
 
 3. **Cost Transparency:** Users provide their own API keys. Cost tracking is essential for trust.
 
-4. **Specification Reference:** See `../.thoughts/specification.md` for full requirements and design decisions.
+4. **Specification Reference:** See `docs/specification.md` for full requirements and design decisions.
 
-5. **Agent Patterns:** See `../.thoughts/agents.md` for agent designs and `../.thoughts/orchestration.md` for pipeline patterns.
+5. **Agent Patterns:** See `docs/architecture/agents.md` for agent designs and `docs/architecture/orchestration.md` for pipeline patterns.
 
 6. **JD Parser Acceptance Criteria:**
    - Successfully extracts: job title, company, required skills, responsibilities, qualifications
