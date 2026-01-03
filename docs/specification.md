@@ -248,7 +248,7 @@ resume-data/ (git-crypt encrypted repo)
 
 ## MoSCoW Prioritized Requirements
 
-### MUST HAVE (MVP - Week 1-4)
+### MUST HAVE (MVP - Week 5-6)
 
 | ID | Requirement | Acceptance Criteria |
 |----|-------------|---------------------|
@@ -263,7 +263,7 @@ resume-data/ (git-crypt encrypted repo)
 | NFR-002 | Docker Deployment | Single `docker-compose up` startup |
 | CC-001 | **Anti-Hallucination** | Zero fabrication, validation layer, diff view |
 
-### SHOULD HAVE (v1.0 - Week 5-8)
+### SHOULD HAVE (v1.0 - Week 7-8)
 
 | ID | Requirement | Description |
 |----|-------------|-------------|
@@ -275,7 +275,7 @@ resume-data/ (git-crypt encrypted repo)
 | NFR-006 | Resume Import | Parse PDF/Markdown to populate Master Resume |
 | IR-003 | LinkedIn Import | Parse LinkedIn data export ZIP |
 
-### COULD HAVE (v1.5 - Week 9-12)
+### COULD HAVE (v1.5 - Week 9-10)
 
 | ID | Requirement | Description |
 |----|-------------|-------------|
@@ -345,10 +345,11 @@ if estimated_cost > user_limit:
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| AI hallucination | HIGH | CRITICAL | Validation layer, user review, strict prompts |
-| TeX installation complexity | MEDIUM | HIGH | Docker with TeX, detailed docs |
+| AI hallucination | HIGH | CRITICAL | P0 validation agent (#24) + strict prompts + output comparison against Master Resume |
+| TeX installation complexity | MEDIUM | HIGH | Docker with TeX, 3-day timebox, HTML-to-PDF fallback |
 | API rate limits | MEDIUM | HIGH | Local caching, retry logic |
-| Cost overruns | MEDIUM | MEDIUM | Pre-flight estimates, spending caps |
+| Cost overruns | MEDIUM | MEDIUM | Pre-flight estimates, spending caps, per-request budget cap ($0.50 default) |
+| JD Parser quality | MEDIUM | HIGH | Confidence scoring, user verification fallback, 20+ JD test corpus |
 
 ---
 
@@ -375,22 +376,21 @@ Week 1-2: Foundation
 
 Week 3-4: Core Features
 ├── Master Resume CRUD (YAML/Markdown files)
-├── LaTeX template + PDF generation
+├── LaTeX template + PDF generation (3-day timebox, HTML fallback)
 ├── Basic tailoring engine
-└── Anti-hallucination validation
+└── Anti-hallucination validation (P0 critical)
 
-Week 5-6: v1.0 Features
+Week 5-6: MVP Complete
+├── All P0 issues (#17-#24) complete
+├── End-to-end resume generation
+├── PDF output functional
+└── Validation agent ensuring no fabrication
+
+Week 7-8: v1.0 Features
 ├── URL-based company research
 ├── 6-month caching
-├── Cover Letter Generation
 ├── Gap analysis
-└── Multiple templates
-
-Week 7-8: Polish
-├── Resume/LinkedIn import (PDF/Markdown)
-├── Export to Markdown
-├── Error handling + UX
-├── Documentation + Testing
+└── Cost tracking + transparency
 ```
 
 ---
