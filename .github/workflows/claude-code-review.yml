@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -47,7 +47,6 @@ jobs:
             pull-requests: write
             actions: read
             checks: read
-            workflows: write
           claude_args: |
             --allowedTools "mcp__github_ci__get_ci_status,mcp__github_ci__get_workflow_run_details,mcp__github_ci__download_job_log,Agent,Skill,TaskCreate,TaskUpdate,Read,Write,Grep,Glob,Bash(git -C *),Bash(*scripts/commits/commit-push-execute.sh *),Bash(git diff *),Bash(git log *),mcp__github__pull_request_read,mcp__github__get_file_contents,mcp__github__add_issue_comment"
 
