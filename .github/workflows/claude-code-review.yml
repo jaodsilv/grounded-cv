@@ -44,6 +44,7 @@ jobs:
             /gitx:address-ci --repo ${{ github.repository }} --pr ${{ github.event.pull_request.number }} --ci-mode ${{ github.job }}
           track_progress: true # ✨ Enables tracking comments
           additional_permissions: |
+            contents: write
             pull-requests: write
             actions: read
             checks: read
