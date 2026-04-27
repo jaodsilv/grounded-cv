@@ -1,0 +1,38 @@
+name: Weekly Maintenance
+on:
+  schedule:
+    - cron: "0 0 * * 0" # Every Sunday at midnight
+  workflow_dispatch: # Manual trigger option
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true # ✨ Enables tracking comments
+          prompt: |
+            REPO: ${{ github.repository }}
+
+            Perform weekly repository maintenance:
+
+            1. [ ] Check for outdated dependencies in package.json
+            2. [ ] Scan for security vulnerabilities using `npm audit`
+            3. [ ] Review open issues older than 90 days
+            4. [ ] Check for TODO comments in recent commits
+            5. [ ] Verify README.md examples still work
+
+            Create a single issue summarizing any findings.
+            If critical security issues are found, also comment on open PRs.
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,TaskCreate,TaskUpdate,TaskGet,TaskList,Bash(npm audit*),Bash(npm outdated*),Bash(git log*),Bash(git diff*),Bash(git show*),Bash(gh issue*),Bash(gh pr*),Bash(gh api*),mcp__github__get_file_contents,mcp__github__search_issues,mcp__github__issue_read,mcp__github__issue_write,mcp__github__list_commits,mcp__github__get_commit,mcp__github__search_code,mcp__github__list_pull_requests,mcp__github__add_issue_comment,mcp__github__get_label"
